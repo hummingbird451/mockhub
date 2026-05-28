@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MockHub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* CSS Variables for Dark/Light Themes */
+        :root {
+            --bg: #000000;
+            --surface: #0a0a0a;
+            --surface-hover: #161616;
+            --border: #2f3336;
+            --text: #e7e9ea;
+            --text-muted: #71767b;
+            --accent: #ffffff;
+            --accent-inverse: #000000;
+            --heart: #f91880;
+        }
+
+        [data-theme="light"] {
+            --bg: #ffffff;
+            --surface: #f7f9f9;
+            --surface-hover: #eff1f1;
+            --border: #eff3f4;
+            --text: #0f1419;
+            --text-muted: #536471;
+            --accent: #000000;
+            --accent-inverse: #ffffff;
+            --heart: #f91880;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        /* Mobile Container Layout */
+        .phone-wrapper {
+            width: 100%;
+            max-width: 500px;
+            border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 65px; /* space for bottom nav */
+            background-color: var(--bg);
+        }
+
+        /* Screen Visibility Controllers */
+        .screen {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            padding: 16px;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Typography & Minimal Inputs */
+        h1 {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        input[type="text"], input[type="password"], textarea {
+            width: 100%;
+            background-color: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--text-muted);
+        }
+
+        .btn {
+            background-color: var(--accent);
+            color: var(--accent-inverse);
+            border: none;
+            padding: 12px;
+            border-radius: 9999px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 12px;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        /* Checkbox Styling */
+        .checkbox-group {
+            margin-bottom: 20px;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .checkbox-label input {
+            margin-right: 12px;
+            width: 20px;
+            height: 20px;
+            accent-color: var(--text);
+        }
+
+        /* Bottom Navigation Bar */
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            max-width: 500px;
+            height: 60px;
+            background-color: var(--bg);
+            border-top: 1px solid var(--border);
+            display: none;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .nav-item {
+            color: var(--text-muted);
+            font-size: 22px;
+            cursor: pointer;
+            padding: 10px 20px;
+            transition: color 0.2s;
+        }
+
+        .nav-item.active {
+            color: var(--text);
+        }
+
+        /* Top Header Component */
+        .feed-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background-color: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            z-index: 50;
+        }
+        [data-theme="light"] .feed-header {
+            background-color: rgba(255,255,255,0.8);
+        }
+
+        .feed-title {
+            font-size: 19px;
+            font-weight: 700;
+        }
+
+        .reload-btn {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        /* Post Render Layout */
+        .post-card {
+            border-bottom: 1px solid var(--border);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .post-user-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: var(--text-muted);
+            color: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+            text-transform: uppercase;
+            margin-right: 12px;
+        }
+
+        .username {
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        .crown {
+            margin-left: 4px;
+        }
+
+        .post-title {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .post-image {
+            width: 100%;
+            border-radius: 12px;
+            margin-top: 8px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+            max-height: 400px;
+            object-fit: cover;
+        }
+
+        .post-desc {
+            font-size: 15px;
+            line-height: 20px;
+            margin-bottom: 12px;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 24px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .action-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .action-item:hover {
+            color: var(--text);
+        }
+
+        .action-item.upmocked {
+            color: var(--heart);
+        }
+
+        /* Action Sheet/Modal Overlays */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg);
+            z-index: 1000;
+            flex-direction: column;
+            padding: 16px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        /* Floating + Creation Trigger */
+        .fab {
+            position: fixed;
+            bottom: 80px;
+            right: calc(50% - 230px);
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background-color: var(--accent);
+            color: var(--accent-inverse);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 90;
+        }
+
+        @media (max-width: 500px) {
+            .fab { right: 20px; }
+        }
+
+        /* Toast Popup Alerts */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #00ba7c;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 9999px;
+            font-weight: bold;
+            z-index: 2000;
+            display: none;
+        }
+
+        /* Comments Interface layout */
+        .comment-stream {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 16px;
+        }
+        .comment-node {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone-wrapper">
+        
+        <div id="screen-login" class="screen active">
+            <div style="margin-top: 40px;">
+                <h1>Welcome to MockHub</h1>
+                <input type="text" id="login-username" placeholder="Username">
+                <input type="password" id="login-password" placeholder="Password (Min 6 chars)">
+                <button class="btn" id="btn-signin">Sign In</button>
+                <button class="btn btn-secondary" id="btn-signup">Create Account</button>
+            </div>
+        </div>
+
+        <div id="screen-setup" class="screen">
+            <h2>Account Onboarding</h2>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">Customize your feed stream preferences.</p>
+            
+            <label style="font-weight: bold; display:block; margin-bottom:10px;">What kind of media do you prefer?</label>
+            <div class="checkbox-group">
+                <label class="checkbox-label"><input type="checkbox" name="pref-tag" value="Liam Mock"> Liam Mock</label>
+                <label class="checkbox-label"><input type="checkbox" name="pref-tag" value="Funny"> Funny</label>
+                <label class="checkbox-label"><input type="checkbox" name="pref-tag" value="Relevant"> Relevant</label>
+                <label class="checkbox-label"><input type="checkbox" name="pref-tag" value="Serious"> Serious</label>
+            </div>
+
+            <label style="font-weight: bold; display:block; margin-bottom:10px;">Are you Liam Mock?</label>
+            <div class="checkbox-group" style="display: flex; gap: 20px;">
+                <label class="checkbox-label"><input type="radio" name="is-liam" value="yes"> Yes</label>
+                <label class="checkbox-label"><input type="radio" name="is-liam" value="no" checked> No</label>
+            </div>
+
+            <button class="btn" id="btn-complete-setup">Save & Enter</button>
+        </div>
+
+        <div id="screen-feed" class="screen">
+            <div class="feed-header">
+                <span class="feed-title">ForMockPage</span>
+                <button class="reload-btn" id="feed-reload"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+            <div id="feed-container"></div>
+        </div>
+
+        <div id="screen-search" class="screen">
+            <input type="text" id="search-input" placeholder="Search posts, titles, or profiles..." style="margin-top:10px;">
+            <div id="search-results"></div>
+        </div>
+
+        <div id="screen-settings" class="screen">
+            <h2>Settings</h2>
+            
+            <button class="btn btn-secondary" id="btn-toggle-theme" style="text-align: left; display:flex; justify-content:space-between; align-items:center;">
+                <span>Interface Theme</span>
+                <span id="theme-status"><i class="fa-solid fa-moon"></i> Dark</span>
+            </button>
+
+            <label style="font-weight: bold; margin-top:20px; display:block;">Change Username</label>
+            <input type="text" id="settings-username" placeholder="New Username">
+            
+            <label style="font-weight: bold; display:block;">Change Password</label>
+            <input type="password" id="settings-password" placeholder="New Password">
+            
+            <button class="btn" id="btn-save-settings">Update Settings</button>
+            <button class="btn btn-secondary" id="btn-logout" style="color: #f4212e; border-color: var(--border);">Sign Out</button>
+        </div>
+
+        <nav class="nav-bar" id="global-nav">
+            <div class="nav-item active" data-target="screen-feed"><i class="fa-solid fa-house"></i></div>
+            <div class="nav-item" data-target="screen-search"><i class="fa-solid fa-magnifying-glass"></i></div>
+            <div class="nav-item" data-target="screen-settings"><i class="fa-solid fa-gear"></i></div>
+        </nav>
+    </div>
+
+    <div class="modal" id="modal-compose">
+        <div class="modal-header">
+            <button class="close-modal" id="close-compose"><i class="fa-solid fa-xmark"></i></button>
+            <button class="btn" id="btn-submit-post" style="width:auto; padding:6px 16px; margin:0; font-size:14px;">Post</button>
+        </div>
+        <input type="text" id="post-title" placeholder="Optional Title">
+        <input type="text" id="post-img-url" placeholder="Optional Image URL (e.g., https://site.com/pic.jpg)">
+        <textarea id="post-message" rows="5" placeholder="Optional Message"></textarea>
+        
+        <label style="font-weight: bold; display:block; margin-bottom:10px;">Categorization Tags (Select at least one):</label>
+        <div class="checkbox-group">
+            <label class="checkbox-label"><input type="checkbox" name="post-tag" value="Liam Mock"> Liam Mock</label>
+            <label class="checkbox-label"><input type="checkbox" name="post-tag" value="Funny"> Funny</label>
+            <label class="checkbox-label"><input type="checkbox" name="post-tag" value="Relevant"> Relevant</label>
+            <label class="checkbox-label"><input type="checkbox" name="post-tag" value="Serious"> Serious</label>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-comments">
+        <div class="modal-header">
+            <button class="close-modal" id="close-comments"><i class="fa-solid fa-xmark"></i></button>
+            <h3 style="font-size:16px;">Comments</h3>
+            <div style="width:24px;"></div>
+        </div>
+        <div class="comment-stream" id="comments-container"></div>
+        <div id="comment-input-area" style="display:flex; gap:10px; align-items:center;">
+            <input type="text" id="new-comment-text" placeholder="Add your comment..." style="margin:0;">
+            <button class="btn" id="btn-submit-comment" style="width:auto; margin:0; padding:12px 20px;"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <div class="fab" id="global-fab" style="display:none;"><i class="fa-solid fa-plus"></i></div>
+
+    <div class="toast" id="global-toast">And then he clicked post</div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updatePassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, orderBy, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Verified Configuration Context
+        const firebaseConfig = {
+            apiKey: "AIzaSyDsyZpUbHJtb1Yv2LCDDFs-zLwHb9DI7yA",
+            authDomain: "mockhub-8ea47.firebaseapp.com",
+            projectId: "mockhub-8ea47",
+            storageBucket: "mockhub-8ea47.firebasestorage.app",
+            messagingSenderId: "906331308780",
+            appId: "1:906331308780:web:1328e33e8e339cc29c5bc9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Core Session State Engine Reference
+        let currentUserData = null;
+        let activePostContextId = null;
+        let localMasterPostsCache = [];
+
+        /* View Router Driver */
+        function switchScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(item => {
+                if(item.getAttribute('data-target') === screenId) item.classList.add('active');
+                else item.classList.remove('active');
+            });
+
+            if (screenId === 'screen-login' || screenId === 'screen-setup') {
+                document.getElementById('global-nav').style.display = 'none';
+                document.getElementById('global-fab').style.display = 'none';
+            } else {
+                document.getElementById('global-nav').style.display = 'flex';
+                document.getElementById('global-fab').style.display = 'flex';
+            }
+
+            if(screenId === 'screen-feed') fetchDynamicFeed();
+        }
+
+        /* Toast Trigger Alert Engine */
+        function triggerToast(message) {
+            const toast = document.getElementById('global-toast');
+            if (message) toast.innerText = message;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2500);
+        }
+
+        /* Session Hook Pipeline */
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    currentUserData = userDoc.data();
+                    document.body.setAttribute('data-theme', currentUserData.theme || 'dark');
+                    updateSettingsUIDisplay();
+                    switchScreen('screen-feed');
+                } else {
+                    switchScreen('screen-setup');
+                }
+            } else {
+                currentUserData = null;
+                switchScreen('screen-login');
+            }
+        });
+
+        /* Sign-up System Handler */
+        document.getElementById('btn-signup').addEventListener('click', async () => {
+            const userText = document.getElementById('login-username').value.trim();
+            const passwordText = document.getElementById('login-password').value;
+            
+            if(!userText || passwordText.length < 6) {
+                alert("Please complete fields. Password requires at least 6 characters.");
+                return;
+            }
+
+            try {
+                // Generate synthetic clean email mapping profile target names safely
+                const structuredEmail = `${userText.toLowerCase().replace(/[^a-z0-9]/g, '')}@mockhub.internal`;
+                const credentialResult = await createUserWithEmailAndPassword(auth, structuredEmail, passwordText);
+                
+                // Keep minimal state context until collection initialization finishes
+                currentUserData = { username: userText };
+                switchScreen('screen-setup');
+            } catch(err) {
+                alert("Authentication Failed: " + err.message);
+            }
+        });
+
+        /* Sign-In Authentication Handler */
+        document.getElementById('btn-signin').addEventListener('click', async () => {
+            const userText = document.getElementById('login-username').value.trim();
+            const passwordText = document.getElementById('login-password').value;
+
+            if(!userText || !passwordText) return;
+
+            try {
+                const structuredEmail = `${userText.toLowerCase().replace(/[^a-z0-9]/g, '')}@mockhub.internal`;
+                await signInWithEmailAndPassword(auth, structuredEmail, passwordText);
+            } catch(err) {
+                alert("Login Error: User verification failed.");
+            }
+        });
+
+        /* Account Setup Completion Handler */
+        document.getElementById('btn-complete-setup').addEventListener('click', async () => {
+            const selectedPrefs = Array.from(document.querySelectorAll('input[name="pref-tag"]:checked')).map(cb => cb.value);
+            const isLiamMockCheck = document.querySelector('input[name="is-liam"]:checked').value === 'yes';
+            
+            const payload = {
+                uid: auth.currentUser.uid,
+                username: currentUserData.username,
+                preferences: selectedPrefs,
+                isLiamMock: isLiamMockCheck,
+                theme: 'dark'
+            };
+
+            await setDoc(doc(db, "users", auth.currentUser.uid), payload);
+            currentUserData = payload;
+            document.body.setAttribute('data-theme', 'dark');
+            updateSettingsUIDisplay();
+            switchScreen('screen-feed');
+        });
+
+        /* Feed Retrieval & Algorithm Implementation Engine */
+        async function fetchDynamicFeed() {
+            const feedContainer = document.getElementById('feed-container');
+            feedContainer.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading Feed...</div>`;
+            
+            try {
+                const querySnapshot = await getDocs(query(collection(db, "posts"), orderBy("timestamp", "desc")));
+                const nowEpoch = Date.now();
+                const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
+                
+                let matchingPool = [];
+
+                querySnapshot.forEach((documentObj) => {
+                    const data = documentObj.data();
+                    data.id = documentObj.id;
+                    
+                    const ageDelta = nowEpoch - data.timestamp;
+                    // Strict algorithm check: Drop post if older than 30 days
+                    if (ageDelta <= thirtyDaysInMs) {
+                        matchingPool.push(data);
+                    }
+                });
+
+                // Scoring Pipeline based on User signup preferences
+                matchingPool.forEach(post => {
+                    let evaluationWeight = 0;
+                    if(currentUserData && currentUserData.preferences) {
+                        post.tags.forEach(tag => {
+                            if(currentUserData.preferences.includes(tag)) evaluationWeight += 10;
+                        });
+                    }
+                    post._score = evaluationWeight;
+                });
+
+                // Arrange array based on algorithmic weights (highest priority displays first)
+                matchingPool.sort((x, y) => y._score - x._score);
+                localMasterPostsCache = matchingPool;
+                
+                renderPostCollection(localMasterPostsCache, feedContainer);
+            } catch (err) {
+                feedContainer.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">Failed to pull feed stream data.</p>`;
+            }
+        }
+
+        /* Post Loop Renderer */
+        function renderPostCollection(postsArray, parentContainer) {
+            parentContainer.innerHTML = "";
+            if(postsArray.length === 0) {
+                parentContainer.innerHTML = `<p style="padding:40px; text-align:center; color:var(--text-muted);">No modern posts are active inside your algorithm parameters.</p>`;
+                return;
+            }
+
+            postsArray.forEach(post => {
+                const userFirstLetter = post.username ? post.username.charAt(0) : "M";
+                const isCrownPresent = post.isLiamMock ? `<span class="crown">👑</span>` : "";
+                const hasUpmocked = post.upMocks && post.upMocks.includes(auth.currentUser.uid);
+                const upMockIconClass = hasUpmocked ? "fa-solid fa-heart" : "fa-regular fa-heart";
+                const activeStateClass = hasUpmocked ? "action-item upmocked" : "action-item";
+
+                const postMarkup = `
+                    <div class="post-card" data-id="${post.id}">
+                        <div class="post-user-row">
+                            <div class="avatar">${userFirstLetter}</div>
+                            <span class="username">${post.username}${isCrownPresent}</span>
+                        </div>
+                        ${post.title ? `<div class="post-title">${post.title}</div>` : ''}
+                        ${post.imageUrl ? `<img src="${post.imageUrl}" class="post-image" alt="Embedded Graphic" onerror="this.style.display='none';">` : ''}
+                        ${post.message ? `<div class="post-desc">${post.message}</div>` : ''}
+                        <div class="post-actions">
+                            <div class="${activeStateClass}" onclick="window.executeUpMockToggle('${post.id}')">
+                                <i class="${upMockIconClass}"></i> <span class="mock-count">${post.upMocks ? post.upMocks.length : 0}</span>
+                            </div>
+                            <div class="action-item" onclick="window.displayCommentsOverlay('${post.id}')">
+                                <i class="fa-regular fa-comment"></i> Comment
+                            </div>
+                        </div>
+                    </div>
+                `;
+                parentContainer.innerHTML += postMarkup;
+            });
+        }
+
+        /* Up Mock High-Five Action Handler */
+        window.executeUpMockToggle = async function(postId) {
+            const matchIndex = localMasterPostsCache.findIndex(p => p.id === postId);
+            if(matchIndex === -1) return;
+
+            const targetPost = localMasterPostsCache[matchIndex];
+            const activeUserUID = auth.currentUser.uid;
+            const postDocumentRef = doc(db, "posts", postId);
+
+            if (targetPost.upMocks && targetPost.upMocks.includes(activeUserUID)) {
+                // Remove if already liked (Toggle back)
+                await updateDoc(postDocumentRef, { upMocks: arrayRemove(activeUserUID) });
+                targetPost.upMocks = targetPost.upMocks.filter(id => id !== activeUserUID);
+            } else {
+                // Assign High-Five vote
+                if(!targetPost.upMocks) targetPost.upMocks = [];
+                await updateDoc(postDocumentRef, { upMocks: arrayUnion(activeUserUID) });
+                targetPost.upMocks.push(activeUserUID);
+            }
+            
+            // Re-render matching view layers gracefully
+            if(document.getElementById('screen-feed').classList.contains('active')) {
+                renderPostCollection(localMasterPostsCache, document.getElementById('feed-container'));
+            } else {
+                executeClientSideSearch();
+            }
+        };
+
+        /* Post Submission Composition System */
+        document.getElementById('btn-submit-post').addEventListener('click', async () => {
+            const titleField = document.getElementById('post-title').value.trim();
+            const imgField = document.getElementById('post-img-url').value.trim();
+            const descField = document.getElementById('post-message').value.trim();
+            const tagsChecked = Array.from(document.querySelectorAll('input[name="post-tag"]:checked')).map(cb => cb.value);
+
+            // Validation Guardrail Logic
+            if(!titleField && !imgField && !descField) {
+                alert("Composition Error: Your post must contain a Title, Image URL, or Body Message.");
+                return;
+            }
+            if(tagsChecked.length === 0) {
+                alert("Classification Required: Choose at least one tag targeting the algorithm framework.");
+                return;
+            }
+
+            const postObject = {
+                uid: auth.currentUser.uid,
+                username: currentUserData.username,
+                isLiamMock: currentUserData.isLiamMock || false,
+                title: titleField,
+                imageUrl: imgField,
+                message: descField,
+                tags: tagsChecked,
+                upMocks: [],
+                timestamp: Date.now()
+            };
+
+            await addDoc(collection(db, "posts"), postObject);
+            
+            // Clear input states
+            document.getElementById('post-title').value = "";
+            document.getElementById('post-img-url').value = "";
+            document.getElementById('post-message').value = "";
+            document.querySelectorAll('input[name="post-tag"]').forEach(cb => cb.checked = false);
+            
+            document.getElementById('modal-compose').style.display = 'none';
+            triggerToast("And then he clicked post");
+            fetchDynamicFeed();
+        });
+
+        /* Global Comments Layer Management */
+        window.displayCommentsOverlay = async function(postId) {
+            activePostContextId = postId;
+            document.getElementById('modal-comments').style.display = 'flex';
+            document.getElementById('new-comment-text').value = "";
+            await refreshCommentsStream();
+        };
+
+        async function refreshCommentsStream() {
+            const streamBox = document.getElementById('comments-container');
+            streamBox.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+            
+            const commentsSnapshot = await getDocs(query(collection(db, `posts/${activePostContextId}/comments`), orderBy("timestamp", "asc")));
+            streamBox.innerHTML = "";
+            
+            let userHasCommented = false;
+
+            commentsSnapshot.forEach(docObj => {
+                const comment = docObj.data();
+                if(auth.currentUser && comment.uid === auth.currentUser.uid) userHasCommented = true;
+                
+                const initialChar = comment.username ? comment.username.charAt(0) : "U";
+                const hasCrown = comment.isLiamMock ? `<span class="crown">👑</span>` : "";
+
+                streamBox.innerHTML += `
+                    <div class="comment-node">
+                        <div class="post-user-row" style="margin-bottom:4px;">
+                            <div class="avatar" style="width:24px; height:24px; font-size:11px;">${initialChar}</div>
+                            <span class="username" style="font-size:13px;">${comment.username}${hasCrown}</span>
+                        </div>
+                        <div style="font-size:14px; padding-left:36px;">${comment.text}</div>
+                    </div>
+                `;
+            });
+
+            if(streamBox.innerHTML === "") {
+                streamBox.innerHTML = `<p style="color:var(--text-muted); font-size:14px; text-align:center; padding:20px;">No comments left yet.</p>`;
+            }
+
+            // Enforce Rule: Only one comment allowed per profile per post
+            const inputPanel = document.getElementById('comment-input-area');
+            if(userHasCommented) {
+                inputPanel.innerHTML = `<p style="color:var(--text-muted); font-size:13px; text-align:center; width:100%;">You have locked your single comment response selection.</p>`;
+            } else {
+                inputPanel.innerHTML = `
+                    <input type="text" id="new-comment-text" placeholder="Add your comment..." style="margin:0;">
+                    <button class="btn" id="btn-submit-comment" style="width:auto; margin:0; padding:12px 20px;"><i class="fa-solid fa-paper-plane"></i></button>
+                `;
+                // Rebind event listener to freshly generated dynamic DOM element
+                document.getElementById('btn-submit-comment').addEventListener('click', postCommentExecution);
+            }
+        }
+
+        async function postCommentExecution() {
+            const textInput = document.getElementById('new-comment-text').value.trim();
+            if(!textInput) return;
+
+            const payload = {
+                uid: auth.currentUser.uid,
+                username: currentUserData.username,
+                isLiamMock: currentUserData.isLiamMock || false,
+                text: textInput,
+                timestamp: Date.now()
+            };
+
+            await addDoc(collection(db, `posts/${activePostContextId}/comments`), payload);
+            await refreshCommentsStream();
+        }
+
+        /* Deep Historical Text Search Filter Engine */
+        function executeClientSideSearch() {
+            const entryText = document.getElementById('search-input').value.toLowerCase().trim();
+            const resultsBox = document.getElementById('search-results');
+            
+            if(!entryText) {
+                resultsBox.innerHTML = `<p style="color:var(--text-muted); padding:20px; text-align:center;">Enter characters above to search historic indexing blocks.</p>`;
+                return;
+            }
+
+            // Runs filtering rules instantly across ALL caching sheets, bypassing the 30-day rule
+            const filteredOutput = localMasterPostsCache.filter(post => {
+                const matchUser = post.username ? post.username.toLowerCase().includes(entryText) : false;
+                const matchTitle = post.title ? post.title.toLowerCase().includes(entryText) : false;
+                const matchBody = post.message ? post.message.toLowerCase().includes(entryText) : false;
+                return matchUser || matchTitle || matchBody;
+            });
+
+            renderPostCollection(filteredOutput, resultsBox);
+        }
+        document.getElementById('search-input').addEventListener('input', executeClientSideSearch);
+
+        /* UI Theme Variable Controller */
+        document.getElementById('btn-toggle-theme').addEventListener('click', () => {
+            const currentMode = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+            document.body.setAttribute('data-theme', currentMode);
+            
+            const statusLabel = document.getElementById('theme-status');
+            statusLabel.innerHTML = currentMode === 'light' ? `<i class="fa-solid fa-sun"></i> Light` : `<i class="fa-solid fa-moon"></i> Dark`;
+            
+            if(auth.currentUser) {
+                updateDoc(doc(db, "users", auth.currentUser.uid), { theme: currentMode });
+                currentUserData.theme = currentMode;
+            }
+        });
+
+        /* Settings Updates Management */
+        function updateSettingsUIDisplay() {
+            document.getElementById('settings-username').value = currentUserData.username || "";
+            const isLight = currentUserData.theme === 'light';
+            document.getElementById('theme-status').innerHTML = isLight ? `<i class="fa-solid fa-sun"></i> Light` : `<i class="fa-solid fa-moon"></i> Dark`;
+        }
+
+        document.getElementById('btn-save-settings').addEventListener('click', async () => {
+            const targetUsername = document.getElementById('settings-username').value.trim();
+            const targetPassword = document.getElementById('settings-password').value;
+            
+            if(!targetUsername) return;
+
+            let parametersToChange = { username: targetUsername };
+            await updateDoc(doc(db, "users", auth.currentUser.uid), parametersToChange);
+            currentUserData.username = targetUsername;
+
+            if(targetPassword && targetPassword.length >= 6) {
+                try {
+                    await updatePassword(auth.currentUser, targetPassword);
+                    document.getElementById('settings-password').value = "";
+                    alert("Profile updates saved successfully!");
+                } catch (e) {
+                    alert("Username saved. To verify password updates, please log out and sign back in first.");
+                }
+            } else {
+                alert("Profile credentials updated successfully.");
+            }
+            fetchDynamicFeed();
+        });
+
+        /* Interface Layout Button Bindings */
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const destination = item.getAttribute('data-target');
+                switchScreen(destination);
+            });
+        });
+
+        document.getElementById('global-fab').addEventListener('click', () => { document.getElementById('modal-compose').style.display = 'flex'; });
+        document.getElementById('close-compose').addEventListener('click', () => { document.getElementById('modal-compose').style.display = 'none'; });
+        document.getElementById('close-comments').addEventListener('click', () => { document.getElementById('modal-comments').style.display = 'none'; });
+        document.getElementById('feed-reload').addEventListener('click', fetchDynamicFeed);
+        document.getElementById('btn-logout').addEventListener('click', () => { signOut(auth); });
+    </script>
+</body>
+</html>
