@@ -1,0 +1,1904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MockHub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* CSS Variables for Dark/Light Themes */
+        :root {
+            --bg: #000000;
+            --surface: #0a0a0a;
+            --surface-hover: #161616;
+            --border: #2f3336;
+            --text: #e7e9ea;
+            --text-muted: #71767b;
+            --accent: #ffffff;
+            --accent-inverse: #000000;
+            --heart: #f91880;
+            --mock-green: #00ba7c;
+        }
+
+        [data-theme="light"] {
+            --bg: #ffffff;
+            --surface: #f7f9f9;
+            --surface-hover: #eff1f1;
+            --border: #eff3f4;
+            --text: #0f1419;
+            --text-muted: #536471;
+            --accent: #000000;
+            --accent-inverse: #ffffff;
+            --heart: #f91880;
+            --mock-green: #00ba7c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        /* Mobile Container Layout */
+        .phone-wrapper {
+            width: 100%;
+            max-width: 500px;
+            border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 65px; /* space for bottom nav */
+            background-color: var(--bg);
+        }
+
+        /* Screen Visibility Controllers */
+        .screen {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            padding: 16px;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Typography & Minimal Inputs */
+        h1 {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            margin-top: 12px;
+        }
+
+        input[type="text"], input[type="password"], textarea, input[type="file"] {
+            width: 100%;
+            background-color: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 16px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--text-muted);
+        }
+
+        /* File input specific sizing styling overrides */
+        input[type="file"] {
+            background-color: var(--surface);
+            cursor: pointer;
+        }
+
+        .btn {
+            background-color: var(--accent);
+            color: var(--accent-inverse);
+            border: none;
+            padding: 12px;
+            border-radius: 9999px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 12px;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-danger {
+            background-color: #f4212e;
+            color: white;
+            border: none;
+        }
+
+        /* Checkbox Styling */
+        .checkbox-group {
+            margin-bottom: 20px;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .checkbox-label input {
+            margin-right: 12px;
+            width: 20px;
+            height: 20px;
+            accent-color: var(--text);
+        }
+
+        /* Bottom Navigation Bar */
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            max-width: 500px;
+            height: 60px;
+            background-color: var(--bg);
+            border-top: 1px solid var(--border);
+            display: none;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .nav-item {
+            color: var(--text-muted);
+            font-size: 22px;
+            cursor: pointer;
+            padding: 10px 20px;
+            transition: color 0.2s;
+        }
+
+        .nav-item.active {
+            color: var(--text);
+        }
+
+        /* Top Header Component */
+        .feed-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background-color: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            z-index: 50;
+        }
+        [data-theme="light"] .feed-header {
+            background-color: rgba(255,255,255,0.8);
+        }
+
+        .feed-title {
+            font-size: 19px;
+            font-weight: 700;
+        }
+
+        .reload-btn {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        /* Post Render Layout */
+        .post-card {
+            border-bottom: 1px solid var(--border);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .post-user-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-right: 75px; /* Room for metadata and elements at top-right */
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: var(--text-muted);
+            color: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 16px;
+            text-transform: uppercase;
+            margin-right: 12px;
+            cursor: pointer;
+        }
+
+        .username {
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .crown {
+            margin-left: 4px;
+        }
+
+        .post-meta-right {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .post-timestamp {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .unread-badge {
+            background-color: var(--mock-green);
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Absolute Follow Button Mapping */
+        .follow-card-trigger {
+            font-size: 18px;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+            user-select: none;
+        }
+        .follow-card-trigger:active {
+            transform: scale(0.85);
+        }
+        .follow-card-trigger.unfollowed {
+            color: var(--text-muted);
+            opacity: 0.4;
+        }
+        .follow-card-trigger.followed {
+            color: var(--mock-green);
+            opacity: 1;
+        }
+
+        .post-title {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .post-image {
+            width: 100%;
+            border-radius: 12px;
+            margin-top: 8px;
+            margin-bottom: 8px;
+            border: 1px solid var(--border);
+            max-height: 400px;
+            object-fit: cover;
+        }
+
+        .post-desc {
+            font-size: 15px;
+            line-height: 20px;
+            margin-bottom: 12px;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 24px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .action-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: color 0.2s, transform 0.1s ease;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .action-item:active {
+            transform: scale(0.95);
+        }
+
+        .action-item:hover {
+            color: var(--text);
+        }
+
+        .action-item.upmocked {
+            color: var(--mock-green);
+            background-color: rgba(0, 186, 124, 0.1);
+            font-weight: bold;
+        }
+
+        /* Action Sheet/Modal Overlays */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg);
+            z-index: 1000;
+            flex-direction: column;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        /* Floating + Creation Trigger */
+        .fab {
+            position: fixed;
+            bottom: 80px;
+            right: calc(50% - 230px);
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background-color: var(--accent);
+            color: var(--accent-inverse);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 90;
+        }
+
+        @media (max-width: 500px) {
+            .fab { right: 20px; }
+        }
+
+        /* Toast Popup Alerts */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #00ba7c;
+            color: white;
+            padding: 10px 24px;
+            border-radius: 9999px;
+            font-weight: bold;
+            z-index: 2000;
+            display: none;
+        }
+
+        /* Comments Interface layout */
+        .comment-stream {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 16px;
+        }
+        .comment-node {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* Admin & Inline Management Control Panels */
+        .admin-section-header {
+            background-color: var(--surface);
+            padding: 10px;
+            margin: 15px 0 10px 0;
+            border-radius: 6px;
+            border-left: 4px solid var(--mock-green);
+            font-weight: bold;
+        }
+        .admin-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        .admin-row-meta {
+            max-width: 70%;
+        }
+
+        .nested-manager-item {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            background-color: var(--surface);
+        }
+
+        /* Pagination loader styling */
+        .pagination-loader {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Account & Profile Metrics Styling Extensions */
+        .profile-header-card {
+            display: flex;
+            flex-direction: column;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+        .profile-user-identity {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-top: 10px;
+            margin-bottom: 16px;
+        }
+        .profile-avatar-large {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background-color: var(--text-muted);
+            color: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 32px;
+            text-transform: uppercase;
+        }
+        .profile-title-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .profile-stat-bar {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 16px;
+            background: var(--surface);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        .profile-stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .profile-stat-box:hover {
+            opacity: 0.8;
+        }
+        .profile-stat-val {
+            font-size: 18px;
+            font-weight: 800;
+        }
+        .profile-stat-lbl {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+        .profile-bio-text {
+            font-size: 15px;
+            line-height: 22px;
+            margin-bottom: 10px;
+            color: var(--text);
+            font-style: italic;
+        }
+        .profile-action-corner {
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+        .profile-action-btn {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 22px;
+            cursor: pointer;
+            padding: 8px;
+            transition: color 0.2s;
+        }
+        .profile-action-btn:hover {
+            color: var(--mock-green);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone-wrapper">
+        
+        <div id="screen-login" class="screen active">
+            <div style="margin-top: 40px;">
+                <h1>Welcome to MockHub</h1>
+                <input type="text" id="login-username" placeholder="Username">
+                <input type="password" id="login-password" placeholder="Password (Min 6 chars)">
+                <button class="btn" id="btn-signin">Sign In</button>
+                <button class="btn btn-secondary" id="btn-signup">Create Account</button>
+            </div>
+        </div>
+
+        <div id="screen-setup" class="screen">
+            <h2>Account Onboarding</h2>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">Customize your feed stream preferences.</p>
+            
+            <label style="font-weight: bold; display:block; margin-bottom:10px;">What kind of media do you prefer?</label>
+            <div class="checkbox-group">
+                <label class="checkbox-label"><input type="checkbox" name="pref-tag" value="Liam Mock"> Liam Mock</label>
+                <label class="checkbox-label"><input type="checkbox" name="pref-tag" value="Funny"> Funny</label>
+                <label class="checkbox-label"><input type="checkbox" name="pref-tag" value="Relevant"> Relevant</label>
+                <label class="checkbox-label"><input type="checkbox" name="pref-tag" value="Serious"> Serious</label>
+            </div>
+
+            <label style="font-weight: bold; display:block; margin-bottom:10px;">Are you Liam Mock?</label>
+            <div class="checkbox-group" style="display: flex; gap: 20px;">
+                <label class="checkbox-label"><input type="radio" name="is-liam" value="yes"> Yes</label>
+                <label class="checkbox-label"><input type="radio" name="is-liam" value="no" checked> No</label>
+            </div>
+
+            <button class="btn" id="btn-complete-setup">Save & Enter</button>
+        </div>
+
+        <div id="screen-feed" class="screen" style="padding: 0; overflow-y: auto; max-height: calc(100vh - 60px);">
+            <div class="feed-header">
+                <span class="feed-title">ForMockPage</span>
+                <button class="reload-btn" id="feed-reload"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+            <div id="feed-container"></div>
+            <div id="pagination-indicator"></div>
+        </div>
+
+        <div id="screen-search" class="screen">
+            <input type="text" id="search-input" placeholder="Search posts, titles, or profiles..." style="margin-top:10px;">
+            <div id="search-results"></div>
+        </div>
+
+        <div id="screen-profile" class="screen" style="padding: 0; overflow-y: auto; max-height: calc(100vh - 60px);">
+            <div class="feed-header">
+                <span class="feed-title" id="profile-top-title">Profile</span>
+            </div>
+            <div style="padding: 16px;">
+                <div class="profile-header-card">
+                    <div class="profile-action-corner" id="profile-interaction-slot">
+                        </div>
+                    <div class="profile-user-identity">
+                        <div class="profile-avatar-large" id="profile-avatar-display">-</div>
+                        <div class="profile-title-info">
+                            <h2 style="margin-bottom: 2px; font-size: 22px;" id="profile-name-display">Username</h2>
+                            <span style="color: var(--text-muted); font-size:14px;" id="profile-handle-display">@logged_in</span>
+                        </div>
+                    </div>
+                    <div class="profile-stat-bar">
+                        <div class="profile-stat-box" style="cursor: default;">
+                            <span class="profile-stat-val" id="profile-stat-upmocks">0</span>
+                            <span class="profile-stat-lbl">Up Mocks</span>
+                        </div>
+                        <div class="profile-stat-box" id="profile-stat-trigger-followers">
+                            <span class="profile-stat-val" id="profile-stat-followers">0</span>
+                            <span class="profile-stat-lbl">Followers</span>
+                        </div>
+                        <div class="profile-stat-box" id="profile-stat-trigger-following">
+                            <span class="profile-stat-val" id="profile-stat-following">0</span>
+                            <span class="profile-stat-lbl">Following</span>
+                        </div>
+                    </div>
+                    <div id="profile-bio-container">
+                        </div>
+                </div>
+                
+                <h3 style="border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom:12px;"><i class="fa-solid fa-timeline"></i> Content History</h3>
+                <div id="profile-posts-ledger-container"></div>
+            </div>
+        </div>
+
+        <div id="screen-admin" class="screen">
+            <h2>MOCK Super-User Dashboard</h2>
+            <p style="color: var(--text-muted); margin-bottom: 10px;">Complete database infrastructure control bypass active.</p>
+            
+            <div class="admin-section-header">Profiles Registry</div>
+            <div id="admin-accounts-list" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px; border: 1px solid var(--border); border-radius:6px;"></div>
+
+            <div class="admin-section-header">Global Content Logs</div>
+            <div id="admin-posts-list" style="max-height: 350px; overflow-y: auto; margin-bottom: 20px; border: 1px solid var(--border); border-radius:6px;"></div>
+
+            <button class="btn btn-danger" id="btn-admin-exit" style="position: sticky; bottom: 5px; z-index: 10;">
+                <i class="fa-solid fa-door-open"></i> Exit Admin Dashboard
+            </button>
+        </div>
+
+        <nav class="nav-bar" id="global-nav">
+            <div class="nav-item active" data-target="screen-feed"><i class="fa-solid fa-house"></i></div>
+            <div class="nav-item" data-target="screen-search"><i class="fa-solid fa-magnifying-glass"></i></div>
+            <div class="nav-item" data-target="screen-profile"><i class="fa-solid fa-user"></i></div>
+        </nav>
+    </div>
+
+    <div class="modal" id="modal-compose">
+        <div class="modal-header">
+            <button class="close-modal" id="close-compose"><i class="fa-solid fa-xmark"></i></button>
+            <button class="btn" id="btn-submit-post" style="width:auto; padding:6px 16px; margin:0; font-size:14px;">Post</button>
+        </div>
+        <input type="text" id="post-title" placeholder="Optional Title">
+        
+        <label style="font-weight: bold; display:block; margin-bottom:6px; font-size:14px;">Attachment Method 2: Web Address Image URL</label>
+        <input type="text" id="post-img-url" placeholder="Optional Image URL (e.g., https://site.com/pic.jpg)">
+        
+        <textarea id="post-message" rows="4" placeholder="Optional Message"></textarea>
+        
+        <label style="font-weight: bold; display:block; margin-bottom:10px;">Categorization Tags (Select at least one):</label>
+        <div class="checkbox-group">
+            <label class="checkbox-label"><input type="checkbox" name="post-tag" value="Liam Mock"> Liam Mock</label>
+            <label class="checkbox-label"><input type="checkbox" name="post-tag" value="Funny"> Funny</label>
+            <label class="checkbox-label"><input type="checkbox" name="post-tag" value="Relevant"> Relevant</label>
+            <label class="checkbox-label"><input type="checkbox" name="post-tag" value="Serious"> Serious</label>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-comments">
+        <div class="modal-header">
+            <button class="close-modal" id="close-comments"><i class="fa-solid fa-xmark"></i></button>
+            <h3 style="font-size:16px; margin:0;">Comments</h3>
+            <div style="width:24px;"></div>
+        </div>
+        <div class="comment-stream" id="comments-container"></div>
+        <div id="comment-input-area" style="display:flex; gap:10px; align-items:center;">
+            <input type="text" id="new-comment-text" placeholder="Add your comment..." style="margin:0;">
+            <button class="btn" id="btn-submit-comment" style="width:auto; margin:0; padding:12px 20px;"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-settings">
+        <div class="modal-header">
+            <button class="close-modal" id="close-settings"><i class="fa-solid fa-xmark"></i></button>
+            <h2 style="margin:0; font-size: 20px;">Account Settings</h2>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+            <button class="btn btn-secondary" id="btn-toggle-theme" style="text-align: left; display:flex; justify-content:space-between; align-items:center;">
+                <span>Interface Theme</span>
+                <span id="theme-status"><i class="fa-solid fa-moon"></i> Dark</span>
+            </button>
+
+            <button class="btn btn-secondary" id="btn-open-my-posts" style="text-align: left; justify-content: flex-start; margin-top: 6px;">
+                <i class="fa-solid fa-lines-leaning"></i> Manage My Posts
+            </button>
+            <button class="btn btn-secondary" id="btn-open-my-follows" style="text-align: left; justify-content: flex-start;">
+                <i class="fa-solid fa-user-plus"></i> Following Registry
+            </button>
+
+            <label style="font-weight: bold; margin-top:14px; display:block; font-size:14px;">Edit Profile Bio (Max 160 characters)</label>
+            <textarea id="settings-bio" rows="2" maxlength="160" placeholder="Tell MockHub about yourself..."></textarea>
+
+            <label style="font-weight: bold; display:block; font-size:14px; margin-bottom: 6px;">Edit Post Feed Preferences</label>
+            <div class="checkbox-group" id="settings-prefs-group" style="margin-bottom:14px; border: 1px solid var(--border); padding: 12px; border-radius: 8px;">
+                <label class="checkbox-label"><input type="checkbox" name="settings-pref-tag" value="Liam Mock"> Liam Mock</label>
+                <label class="checkbox-label"><input type="checkbox" name="settings-pref-tag" value="Funny"> Funny</label>
+                <label class="checkbox-label"><input type="checkbox" name="settings-pref-tag" value="Relevant"> Relevant</label>
+                <label class="checkbox-label"><input type="checkbox" name="settings-pref-tag" value="Serious"> Serious</label>
+            </div>
+
+            <label style="font-weight: bold; display:block; font-size:14px;">Change Username</label>
+            <input type="text" id="settings-username" placeholder="New Username">
+            
+            <label style="font-weight: bold; display:block; font-size:14px;">Change Password</label>
+            <input type="password" id="settings-password" placeholder="New Password">
+            
+            <button class="btn" id="btn-save-settings" style="margin-top: 10px;">Update Settings</button>
+            <button class="btn btn-secondary" id="btn-logout" style="color: #f4212e; border-color: var(--border); margin-bottom: 40px;">Sign Out</button>
+        </div>
+    </div>
+
+    <div class="modal" id="modal-profile-list-view">
+        <div class="modal-header">
+            <h3 id="profile-list-view-title" style="margin:0; font-size:18px;">Registry Members</h3>
+            <button class="close-modal" id="close-profile-list-view"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="profile-list-view-container"></div>
+    </div>
+
+    <div class="modal" id="modal-my-posts">
+        <div class="modal-header">
+            <button class="close-modal" id="close-my-posts"><i class="fa-solid fa-xmark"></i></button>
+            <h3 style="margin:0;">My Historical Content Ledger</h3>
+        </div>
+        <div id="my-posts-container"></div>
+    </div>
+
+    <div class="modal" id="modal-my-follows">
+        <div class="modal-header">
+            <button class="close-modal" id="close-my-follows"><i class="fa-solid fa-xmark"></i></button>
+            <h3 style="margin:0;">Profiles Followed Ledger</h3>
+        </div>
+        <div id="my-follows-container"></div>
+    </div>
+
+    <div class="fab" id="global-fab" style="display:none;"><i class="fa-solid fa-plus"></i></div>
+
+    <div class="toast" id="global-toast">And then he clicked post</div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updatePassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, deleteDoc, query, orderBy, limit, startAfter, arrayUnion, arrayRemove, increment, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Verified Configuration Context
+        const firebaseConfig = {
+            apiKey: "AIzaSyDsyZpUbHJtb1Yv2LCDDFs-zLwHb9DI7yA",
+            authDomain: "mockhub-8ea47.firebaseapp.com",
+            projectId: "mockhub-8ea47",
+            messagingSenderId: "906331308780",
+            appId: "1:906331308780:web:1328e33e8e339cc29c5bc9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Core Session State Engine Reference
+        let currentUserData = null;
+        let activePostContextId = null;
+        let localMasterPostsCache = [];
+        let isAdminModeBypassActive = false;
+
+        // Pagination and Unread Session State variables
+        let lastVisiblePostDoc = null;
+        let isFetchingNextBatch = false;
+        let hasReachedEnd = false;
+        let appSessionOpenTimestamp = Date.now();
+        let activeViewTimers = {};
+        let activeIntersectionObserver = null;
+        
+        // Track targeted profiles independently from current active user state sessions
+        let profileViewUIDContext = null;
+
+        /* View Router Driver */
+        function switchScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(item => {
+                if(item.getAttribute('data-target') === screenId) item.classList.add('active');
+                else item.classList.remove('active');
+            });
+
+            // Handle Navigation Bar display configurations safely
+            if (screenId === 'screen-login' || screenId === 'screen-setup' || screenId === 'screen-admin') {
+                document.getElementById('global-nav').style.display = 'none';
+                document.getElementById('global-fab').style.display = 'none';
+            } else {
+                document.getElementById('global-nav').style.display = 'flex';
+                document.getElementById('global-fab').style.display = 'flex';
+            }
+
+            if(screenId === 'screen-feed') {
+                // Clear state pagination loops on dynamic screen updates
+                lastVisiblePostDoc = null;
+                hasReachedEnd = false;
+                localMasterPostsCache = [];
+                fetchDynamicFeed(false);
+            }
+            if(screenId === 'screen-profile') {
+                // Default profile page navigation loops map directly to current user state logs
+                if (auth.currentUser && !profileViewUIDContext) {
+                    profileViewUIDContext = auth.currentUser.uid;
+                }
+                renderProfileViewFrame(profileViewUIDContext || (auth.currentUser ? auth.currentUser.uid : ""));
+            }
+            if(screenId === 'screen-admin') executeAdminDataPipeline();
+        }
+
+        /* Toast Trigger Alert Engine */
+        function triggerToast(message) {
+            const toast = document.getElementById('global-toast');
+            if (message) toast.innerText = message;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2500);
+        }
+
+        /* Conversional Human-Readable Relative Timestamp Shorthand Helper */
+        function formatRelativeTimestamp(epochTime) {
+            const now = Date.now();
+            const differenceInSeconds = Math.floor((now - epochTime) / 1000);
+
+            if (differenceInSeconds < 60) return 'Just now';
+            
+            const differenceInMinutes = Math.floor(differenceInSeconds / 60);
+            if (differenceInMinutes < 60) return `${differenceInMinutes}m`;
+            
+            const differenceInHours = Math.floor(differenceInMinutes / 60);
+            if (differenceInHours < 24) return `${differenceInHours}h`;
+            
+            const differenceInDays = Math.floor(differenceInHours / 24);
+            if (differenceInDays < 30) return `${differenceInDays}d`;
+            
+            const differenceInMonths = Math.floor(differenceInDays / 30);
+            if (differenceInMonths < 12) return `${differenceInMonths}mo`;
+            
+            const differenceInYears = Math.floor(differenceInMonths / 12);
+            return `${differenceInYears}y`;
+        }
+
+        /* Persistent Read Actions Handler Engine */
+        function getReadPostIdsRegistry() {
+            try {
+                const storedValue = localStorage.getItem('mockhub_read_registry');
+                return storedValue ? JSON.parse(storedValue) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function markPostIdAsReadInRegistry(postId) {
+            let registry = getReadPostIdsRegistry();
+            if (!registry.includes(postId)) {
+                registry.push(postId);
+                localStorage.setItem('mockhub_read_registry', JSON.stringify(registry));
+            }
+            // Animate target item unread badge off visually immediately
+            const badgeElement = document.querySelector(`.post-card[data-id="${postId}"] .unread-badge`);
+            if (badgeElement) {
+                badgeElement.style.opacity = '0';
+                setTimeout(() => badgeElement.remove(), 300);
+            }
+        }
+
+        /* Initialize Intersection Tracking System Engine */
+        function setupFeedVisibilityIntersectionObserver() {
+            if (activeIntersectionObserver) {
+                activeIntersectionObserver.disconnect();
+            }
+
+            activeIntersectionObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const id = entry.target.getAttribute('data-id');
+                    if (!id) return;
+
+                    if (entry.isIntersecting) {
+                        // Start 15-second counter loop block if observed entry contains unread markup elements
+                        if (entry.target.querySelector('.unread-badge') && !activeViewTimers[id]) {
+                            activeViewTimers[id] = setTimeout(() => {
+                                markPostIdAsReadInRegistry(id);
+                                delete activeViewTimers[id];
+                            }, 15000);
+                        }
+                    } else {
+                        // If element exits display container prematurely, safely destroy active timer loops
+                        if (activeViewTimers[id]) {
+                            clearTimeout(activeViewTimers[id]);
+                            delete activeViewTimers[id];
+                        }
+                    }
+                });
+            }, {
+                root: document.getElementById('screen-feed'),
+                threshold: 0.6 // 60% visibility metric parameters
+            });
+
+            document.querySelectorAll('.post-card').forEach(card => {
+                activeIntersectionObserver.observe(card);
+            });
+        }
+
+        /* Session Hook Pipeline */
+        onAuthStateChanged(auth, async (user) => {
+            if (isAdminModeBypassActive) return; // Prevent lifecycle interceptions inside control layout
+
+            if (user) {
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    currentUserData = userDoc.data();
+                    if (!currentUserData.following) currentUserData.following = [];
+                    if (!currentUserData.followers) currentUserData.followers = [];
+                    if (currentUserData.upMockCount === undefined) currentUserData.upMockCount = 0;
+                    if (currentUserData.followerCount === undefined) currentUserData.followerCount = 0;
+                    if (currentUserData.followingCount === undefined) currentUserData.followingCount = 0;
+                    if (currentUserData.bio === undefined) currentUserData.bio = "";
+                    
+                    document.body.setAttribute('data-theme', currentUserData.theme || 'dark');
+                    updateSettingsUIDisplay();
+                    // App session opened / re-opened initialization step
+                    appSessionOpenTimestamp = Date.now();
+                    profileViewUIDContext = user.uid;
+                    switchScreen('screen-feed');
+                } else {
+                    switchScreen('screen-setup');
+                }
+            } else {
+                currentUserData = null;
+                profileViewUIDContext = null;
+                switchScreen('screen-login');
+            }
+        });
+
+        /* Sign-up System Handler */
+        document.getElementById('btn-signup').addEventListener('click', async () => {
+            const userText = document.getElementById('login-username').value.trim();
+            const passwordText = document.getElementById('login-password').value;
+            
+            if(!userText || passwordText.length < 6) {
+                alert("Please complete fields. Password requires at least 6 characters.");
+                return;
+            }
+
+            try {
+                const structuredEmail = `${userText.toLowerCase().replace(/[^a-z0-9]/g, '')}@mockhub.internal`;
+                await createUserWithEmailAndPassword(auth, structuredEmail, passwordText);
+                currentUserData = { 
+                    username: userText, 
+                    following: [], 
+                    followers: [], 
+                    upMockCount: 0, 
+                    followerCount: 0, 
+                    followingCount: 0, 
+                    bio: "" 
+                };
+                switchScreen('screen-setup');
+            } catch(err) {
+                alert("Authentication Failed: " + err.message);
+            }
+        });
+
+        /* Sign-In Authentication Handler & Hidden Admin Routing Mechanism */
+        document.getElementById('btn-signin').addEventListener('click', async () => {
+            const userText = document.getElementById('login-username').value.trim();
+            const passwordText = document.getElementById('login-password').value;
+
+            if(!userText || !passwordText) return;
+
+            // Hidden Trapdoor check for "MOCK" Administrative Engine
+            if(userText.toUpperCase() === "MOCK" && passwordText.toUpperCase() === "MOCK") {
+                isAdminModeBypassActive = true;
+                currentUserData = { username: "SUPER USER", following: [], followers: [], isLiamMock: true, upMockCount: 0, followerCount: 0, followingCount: 0, bio: "" };
+                appSessionOpenTimestamp = Date.now();
+                switchScreen('screen-admin');
+                return;
+            }
+
+            try {
+                const structuredEmail = `${userText.toLowerCase().replace(/[^a-z0-9]/g, '')}@mockhub.internal`;
+                await signInWithEmailAndPassword(auth, structuredEmail, passwordText);
+            } catch(err) {
+                alert("Login Error: User verification failed.");
+            }
+        });
+
+        /* Account Setup Completion Handler */
+        document.getElementById('btn-complete-setup').addEventListener('click', async () => {
+            const selectedPrefs = Array.from(document.querySelectorAll('input[name="pref-tag"]:checked')).map(cb => cb.value);
+            const isLiamMockCheck = document.querySelector('input[name="is-liam"]:checked').value === 'yes';
+            
+            const payload = {
+                uid: auth.currentUser.uid,
+                username: currentUserData.username,
+                preferences: selectedPrefs,
+                isLiamMock: isLiamMockCheck,
+                theme: 'dark',
+                following: [],
+                followers: [],
+                upMockCount: 0,
+                followerCount: 0,
+                followingCount: 0,
+                bio: ""
+            };
+
+            await setDoc(doc(db, "users", auth.currentUser.uid), payload);
+            currentUserData = payload;
+            document.body.setAttribute('data-theme', 'dark');
+            updateSettingsUIDisplay();
+            appSessionOpenTimestamp = Date.now();
+            profileViewUIDContext = auth.currentUser.uid;
+            switchScreen('screen-feed');
+        });
+
+        /* Feed Retrieval & Multi-Tier Algorithm Integration Engine with Pagination support */
+        async function fetchDynamicFeed(appendMode = false) {
+            if (isFetchingNextBatch || hasReachedEnd) return;
+            
+            isFetchingNextBatch = true;
+            const feedContainer = document.getElementById('feed-container');
+            const indicatorBox = document.getElementById('pagination-indicator');
+
+            if (!appendMode) {
+                feedContainer.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading Feed...</div>`;
+                indicatorBox.innerHTML = "";
+            } else {
+                indicatorBox.innerHTML = `<div class="pagination-loader"><i class="fa-solid fa-spinner fa-spin"></i> Loading more modern updates...</div>`;
+            }
+            
+            try {
+                // Tier 1: Pull baseline elements chronologically using direct query indices
+                let queryPipeline = query(collection(db, "posts"), orderBy("timestamp", "desc"), limit(100));
+                
+                if (appendMode && lastVisiblePostDoc) {
+                    queryPipeline = query(collection(db, "posts"), orderBy("timestamp", "desc"), startAfter(lastVisiblePostDoc), limit(100));
+                }
+
+                const querySnapshot = await getDocs(queryPipeline);
+                
+                if (querySnapshot.empty) {
+                    hasReachedEnd = true;
+                    indicatorBox.innerHTML = appendMode ? `<div class="pagination-loader">You have scrolled to the absolute bottom of structural universe.</div>` : "";
+                    if (!appendMode) {
+                        feedContainer.innerHTML = `<p style="padding:40px; text-align:center; color:var(--text-muted);">No modern posts are active inside your algorithm parameters.</p>`;
+                    }
+                    isFetchingNextBatch = false;
+                    return;
+                }
+
+                lastVisiblePostDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
+                let currentBatchPool = [];
+
+                querySnapshot.forEach((documentObj) => {
+                    const data = documentObj.data();
+                    data.id = documentObj.id;
+                    currentBatchPool.push(data);
+                });
+
+                const nowTimestamp = Date.now();
+                const twelveHoursInMilliseconds = 12 * 60 * 60 * 1000;
+
+                // Precompute engagement metrics and preference match counts for sorting
+                currentBatchPool.forEach(post => {
+                    const upMocksCount = post.upMocks ? post.upMocks.length : 0;
+                    const commentsCount = post.commentCount || 0;
+                    
+                    post._isWithin12Hours = post.timestamp && (nowTimestamp - post.timestamp) <= twelveHoursInMilliseconds;
+                    post._popularityScore = upMocksCount + commentsCount; // Equally weighted likes and comments
+                    
+                    let matchCount = 0;
+                    if (currentUserData && currentUserData.preferences && post.tags) {
+                        post.tags.forEach(tag => {
+                            if (currentUserData.preferences.includes(tag)) matchCount++;
+                        });
+                    }
+                    post._preferenceMatchCount = matchCount;
+                });
+
+                // Structured Priority Ranking Algorithm Cascade
+                currentBatchPool.sort((x, y) => {
+                    // Rule 1: Priority Freshness (Within last 12 hours) takes absolute precedence
+                    if (x._isWithin12Hours && !y._isWithin12Hours) return -1;
+                    if (!x._isWithin12Hours && y._isWithin12Hours) return 1;
+
+                    // Rule 2: Sort by equal-weighted Popularity engagement metric
+                    if (x._popularityScore !== y._popularityScore) {
+                        return y._popularityScore - x._popularityScore;
+                    }
+
+                    // Rule 3: Tie-breaker sorting by preference match totals (Option A)
+                    if (x._preferenceMatchCount !== y._preferenceMatchCount) {
+                        return y._preferenceMatchCount - x._preferenceMatchCount;
+                    }
+
+                    // Strict final fallback order fallback by timestamp chronological entry
+                    return (y.timestamp || 0) - (x.timestamp || 0);
+                });
+
+                if (appendMode) {
+                    localMasterPostsCache = localMasterPostsCache.concat(currentBatchPool);
+                } else {
+                    localMasterPostsCache = currentBatchPool;
+                }
+                
+                indicatorBox.innerHTML = "";
+                renderPostCollection(localMasterPostsCache, feedContainer);
+                setupFeedVisibilityIntersectionObserver();
+
+                if (querySnapshot.docs.length < 100) {
+                    hasReachedEnd = true;
+                    indicatorBox.innerHTML = `<div class="pagination-loader">You have scrolled to the absolute bottom of structural universe.</div>`;
+                }
+            } catch (err) {
+                console.error(err);
+                feedContainer.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">Failed to pull feed stream data.</p>`;
+            } finally {
+                isFetchingNextBatch = false;
+            }
+        }
+
+        /* Profile Selection Router Interceptor Utility */
+        window.navigateToUserProfile = function(authorUID) {
+            if(isAdminModeBypassActive) return;
+            profileViewUIDContext = authorUID;
+            switchScreen('screen-profile');
+        };
+
+        /* Modern Post Loop Renderer */
+        function renderPostCollection(postsArray, parentContainer, restrictUpmockViewers = false) {
+            parentContainer.innerHTML = "";
+            if(postsArray.length === 0) {
+                parentContainer.innerHTML = `<p style="padding:40px; text-align:center; color:var(--text-muted);">No modern posts match your criteria.</p>`;
+                return;
+            }
+
+            const currentActiveUserId = auth.currentUser ? auth.currentUser.uid : "ADMIN_UID";
+            const readRegistry = getReadPostIdsRegistry();
+
+            postsArray.forEach(post => {
+                const userFirstLetter = post.username ? post.username.charAt(0) : "M";
+                const isCrownPresent = post.isLiamMock ? `<span class="crown">👑</span>` : "";
+                
+                // Configured Up Mock Hand Button Styling Engine mapping
+                const hasUpmocked = post.upMocks && post.upMocks.includes(currentActiveUserId);
+                const activeStateClass = hasUpmocked ? "action-item upmocked" : "action-item";
+                const commentTotalDisplay = post.commentCount || 0;
+
+                // Relative Timestamp Generation
+                const cleanTimeDisplay = formatRelativeTimestamp(post.timestamp);
+
+                // Smart Unread Condition Engine parameters
+                const isUnread = (post.timestamp > appSessionOpenTimestamp) && !readRegistry.includes(post.id);
+                const unreadMarkup = isUnread ? `<span class="unread-badge">Unread</span>` : "";
+
+                // Follow Checkmark Logic Engine configuration array
+                let followIconMarkup = "";
+                if(post.uid !== currentActiveUserId && !isAdminModeBypassActive) {
+                    const isFollowed = currentUserData && currentUserData.following && currentUserData.following.includes(post.uid);
+                    if(isFollowed) {
+                        followIconMarkup = `<div class="follow-card-trigger followed" onclick="window.executeFollowPipelineToggle('${post.uid}', true); event.stopPropagation();"><i class="fa-solid fa-circle-check"></i></div>`;
+                    } else {
+                        followIconMarkup = `<div class="follow-card-trigger unfollowed" onclick="window.executeFollowPipelineToggle('${post.uid}', false); event.stopPropagation();"><i class="fa-regular fa-circle-user"></i></div>`;
+                    }
+                }
+
+                // Conditionally bind upmock viewer click events strictly if restricted to original author context
+                const totalMocks = post.upMocks ? post.upMocks.length : 0;
+                let upMockClickEvent = `window.executeUpMockToggle('${post.id}')`;
+                if(restrictUpmockViewers && post.uid === currentActiveUserId) {
+                    upMockClickEvent = `window.openUpMockVotersModal('${post.id}')`;
+                }
+
+                const postMarkup = `
+                    <div class="post-card" data-id="${post.id}">
+                        <div class="post-meta-right">
+                            ${unreadMarkup}
+                            <span class="post-timestamp">${cleanTimeDisplay}</span>
+                            ${followIconMarkup}
+                        </div>
+                        <div class="post-user-row" onclick="window.navigateToUserProfile('${post.uid}')">
+                            <div class="avatar">${userFirstLetter}</div>
+                            <span class="username">${post.username}${isCrownPresent}</span>
+                        </div>
+                        ${post.title ? `<div class="post-title">${post.title}</div>` : ''}
+                        ${post.imageUrl ? `<img src="${post.imageUrl}" class="post-image" alt="Embedded Graphic" onerror="this.style.display='none';">` : ''}
+                        ${post.message ? `<div class="post-desc">${post.message}</div>` : ''}
+                        <div class="post-actions">
+                            <div class="${activeStateClass}" onclick="${upMockClickEvent}">
+                                <span>🖐️ Up Mock</span> <span class="mock-count">${totalMocks}</span>
+                            </div>
+                            <div class="action-item" onclick="window.displayCommentsOverlay('${post.id}')">
+                                <i class="fa-regular fa-comment"></i> Comment <span style="font-weight:bold; margin-left:2px;">(${commentTotalDisplay})</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                parentContainer.innerHTML += postMarkup;
+            });
+        }
+
+        /* Dynamic Engine Rendering Strategy For Profiles Viewports */
+        async function renderProfileViewFrame(targetUID) {
+            if(!targetUID) return;
+            
+            const isViewingSelf = auth.currentUser && (targetUID === auth.currentUser.uid);
+            const avatarBox = document.getElementById('profile-avatar-display');
+            const nameBox = document.getElementById('profile-name-display');
+            const handleBox = document.getElementById('profile-handle-display');
+            const upmocksCounter = document.getElementById('profile-stat-upmocks');
+            const followersCounter = document.getElementById('profile-stat-followers');
+            const followingCounter = document.getElementById('profile-stat-following');
+            const bioContainer = document.getElementById('profile-bio-container');
+            const interfaceSlot = document.getElementById('profile-interaction-slot');
+            const ledgerContainer = document.getElementById('profile-posts-ledger-container');
+
+            ledgerContainer.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Indexing posts...</div>`;
+            
+            let profileDocData = null;
+            if(isViewingSelf) {
+                profileDocData = currentUserData;
+                document.getElementById('profile-top-title').innerText = "My Account";
+                handleBox.innerText = `@${profileDocData.username.toLowerCase().replace(/[^a-z0-9]/g, '')} (You)`;
+                
+                // Mount internal configuration cog layout settings triggers
+                interfaceSlot.innerHTML = `<button class="profile-action-btn" id="profile-settings-toggle"><i class="fa-solid fa-gear"></i></button>`;
+                document.getElementById('profile-settings-toggle').addEventListener('click', () => {
+                    document.getElementById('modal-settings').style.display = 'flex';
+                });
+            } else {
+                document.getElementById('profile-top-title').innerText = "View Profile";
+                const pulledSnapshot = await getDoc(doc(db, "users", targetUID));
+                if(!pulledSnapshot.exists()) {
+                    ledgerContainer.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">Profile registry document missing.</p>`;
+                    return;
+                }
+                profileDocData = pulledSnapshot.data();
+                handleBox.innerText = `@${profileDocData.username.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+
+                // Setup external contextual follow/unfollow toggle elements programmatically
+                const amFollowing = currentUserData.following && currentUserData.following.includes(targetUID);
+                if(amFollowing) {
+                    interfaceSlot.innerHTML = `<button class="btn" style="padding: 6px 16px; font-size:13px; width:auto; margin:0; background-color: var(--surface); color: var(--text); border:1px solid var(--border);" id="profile-follow-action">Following</button>`;
+                } else {
+                    interfaceSlot.innerHTML = `<button class="btn" style="padding: 6px 16px; font-size:13px; width:auto; margin:0;" id="profile-follow-action"><i class="fa-solid fa-user-plus"></i> Follow</button>`;
+                }
+
+                document.getElementById('profile-follow-action').addEventListener('click', async () => {
+                    await window.executeFollowPipelineToggle(targetUID, amFollowing);
+                    renderProfileViewFrame(targetUID);
+                });
+            }
+
+            // Sync typography attributes securely
+            avatarBox.innerText = profileDocData.username ? profileDocData.username.charAt(0) : "M";
+            nameBox.innerHTML = `${profileDocData.username}${profileDocData.isLiamMock ? '<span class="crown">👑</span>' : ''}`;
+            
+            // Render fast counter cached layout attributes natively
+            upmocksCounter.innerText = profileDocData.upMockCount || 0;
+            followersCounter.innerText = profileDocData.followerCount || 0;
+            followingCounter.innerText = profileDocData.followingCount || 0;
+
+            // Enforce Bio Validation Rule Protocols
+            if(profileDocData.bio && profileDocData.bio.trim().length > 0) {
+                bioContainer.innerHTML = `<p class="profile-bio-text">${profileDocData.bio}</p>`;
+            } else {
+                if(isViewingSelf) {
+                    bioContainer.innerHTML = `<button class="btn btn-secondary" style="font-size:14px; padding:8px 16px; margin-top:4px;" id="profile-create-bio-shortcut"><i class="fa-solid fa-pen-to-square"></i> Create Bio</button>`;
+                    document.getElementById('profile-create-bio-shortcut').addEventListener('click', () => {
+                        document.getElementById('modal-settings').style.display = 'flex';
+                        document.getElementById('settings-bio').focus();
+                    });
+                } else {
+                    bioContainer.innerHTML = `<p class="profile-bio-text" style="color: var(--text-muted);">No bio listed yet.</p>`;
+                }
+            }
+
+            // Unbind and rebind metric list trigger configurations natively
+            document.getElementById('profile-stat-trigger-followers').onclick = () => {
+                window.openRegistryVotersModal(profileDocData.followers || [], "Followers Registry");
+            };
+            document.getElementById('profile-stat-trigger-following').onclick = () => {
+                window.openRegistryVotersModal(profileDocData.following || [], "Following Registry");
+            };
+
+            // Query chronological historical posts collection filter sequences
+            try {
+                const targetPostsQuery = query(collection(db, "posts"), where("uid", "==", targetUID));
+                const pulledPostsSnapshot = await getDocs(targetPostsQuery);
+                let ledgerArray = [];
+                
+                pulledPostsSnapshot.forEach(docObj => {
+                    let pData = docObj.data();
+                    pData.id = docObj.id;
+                    ledgerArray.push(pData);
+                });
+
+                // Chronological fallback sort operations
+                ledgerArray.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+                
+                // Render list collection directly specifying author validation states override features
+                renderPostCollection(ledgerArray, ledgerContainer, isViewingSelf);
+            } catch(e) {
+                console.error(e);
+                ledgerContainer.innerHTML = `<p style="padding:20px; text-align:center; color:var(--text-muted);">Failed to pull chronological index metrics.</p>`;
+            }
+        }
+
+        /* Abstract Registry Network Visualizers */
+        window.openRegistryVotersModal = async function(uidArray, labelHeading) {
+            const modalFrame = document.getElementById('modal-profile-list-view');
+            const titleBox = document.getElementById('profile-list-view-title');
+            const canvasBox = document.getElementById('profile-list-view-container');
+
+            titleBox.innerText = labelHeading;
+            modalFrame.style.display = 'flex';
+            canvasBox.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Resolving connections...</div>`;
+
+            if(!uidArray || uidArray.length === 0) {
+                canvasBox.innerHTML = `<p style="padding:30px; text-align:center; color:var(--text-muted);">No registry connections identified.</p>`;
+                return;
+            }
+
+            let renderedHTML = "";
+            for (const itemUID of uidArray) {
+                const userDocRef = await getDoc(doc(db, "users", itemUID));
+                if(userDocRef.exists()) {
+                    const uData = userDocRef.data();
+                    const initial = uData.username ? uData.username.charAt(0) : "U";
+                    renderedHTML += `
+                        <div class="admin-row" style="cursor:pointer;" onclick="document.getElementById('modal-profile-list-view').style.display='none'; window.navigateToUserProfile('${itemUID}')">
+                            <div class="post-user-row" style="margin:0;">
+                                <div class="avatar" style="width:30px; height:30px; font-size:13px;">${initial}</div>
+                                <span class="username" style="font-size:14px;">${uData.username}</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right" style="color:var(--text-muted); font-size:12px;"></i>
+                        </div>
+                    `;
+                }
+            }
+            canvasBox.innerHTML = renderedHTML || `<p style="padding:30px; text-align:center; color:var(--text-muted);">Connections registry detached.</p>`;
+        };
+
+        /* Up Mock Author-Restricted Voter Registry Window Loader */
+        window.openUpMockVotersModal = async function(postId) {
+            // Locate targeted post attributes dynamically via local cache index matrices
+            const item = localMasterPostsCache.find(p => p.id === postId) || { upMocks: [] };
+            await window.openRegistryVotersModal(item.upMocks || [], "Up Mocked By");
+        };
+
+        /* Custom Follow Actions System Middleware */
+        window.executeFollowPipelineToggle = async function(targetAuthorUID, currentFollowState) {
+            if(!auth.currentUser || targetAuthorUID === auth.currentUser.uid) return;
+            
+            const myUserDocRef = doc(db, "users", auth.currentUser.uid);
+            const targetUserDocRef = doc(db, "users", targetAuthorUID);
+
+            if(currentFollowState) {
+                // Instantly Unfollow targeted structural profile context
+                await updateDoc(myUserDocRef, { 
+                    following: arrayRemove(targetAuthorUID),
+                    followingCount: increment(-1)
+                });
+                await updateDoc(targetUserDocRef, { 
+                    followers: arrayRemove(auth.currentUser.uid),
+                    followerCount: increment(-1)
+                });
+
+                currentUserData.following = currentUserData.following.filter(id => id !== targetAuthorUID);
+                currentUserData.followingCount = Math.max(0, (currentUserData.followingCount || 0) - 1);
+                triggerToast("Account unfollowed successfully");
+            } else {
+                // Append target UID directly to array listings and step counters atomic tracking updates
+                await updateDoc(myUserDocRef, { 
+                    following: arrayUnion(targetAuthorUID),
+                    followingCount: increment(1)
+                });
+                await updateDoc(targetUserDocRef, { 
+                    followers: arrayUnion(auth.currentUser.uid),
+                    followerCount: increment(1)
+                });
+
+                currentUserData.following.push(targetAuthorUID);
+                currentUserData.followingCount = (currentUserData.followingCount || 0) + 1;
+                triggerToast("Account followed!");
+            }
+
+            // Sync structural interfaces
+            if(document.getElementById('screen-feed').classList.contains('active')) {
+                renderPostCollection(localMasterPostsCache, document.getElementById('feed-container'));
+                setupFeedVisibilityIntersectionObserver();
+            } else if (document.getElementById('screen-profile').classList.contains('active')) {
+                renderProfileViewFrame(profileViewUIDContext);
+            } else {
+                executeClientSideSearch();
+            }
+        };
+
+        /* Up Mock Hand Emoji Action Handler Modification */
+        window.executeUpMockToggle = async function(postId) {
+            const matchIndex = localMasterPostsCache.findIndex(p => p.id === postId);
+            if(matchIndex === -1) return;
+
+            const targetPost = localMasterPostsCache[matchIndex];
+            const activeUserUID = auth.currentUser ? auth.currentUser.uid : "ADMIN_UID";
+            
+            const postDocumentRef = doc(db, "posts", postId);
+            const authorDocumentRef = doc(db, "users", targetPost.uid);
+
+            if (targetPost.upMocks && targetPost.upMocks.includes(activeUserUID)) {
+                await updateDoc(postDocumentRef, { upMocks: arrayRemove(activeUserUID) });
+                // Atomically decrement authors global count trackers cleanly
+                await updateDoc(authorDocumentRef, { upMockCount: increment(-1) });
+                targetPost.upMocks = targetPost.upMocks.filter(id => id !== activeUserUID);
+                if (targetPost.uid === activeUserUID) {
+                    currentUserData.upMockCount = Math.max(0, (currentUserData.upMockCount || 0) - 1);
+                }
+            } else {
+                if(!targetPost.upMocks) targetPost.upMocks = [];
+                await updateDoc(postDocumentRef, { upMocks: arrayUnion(activeUserUID) });
+                // Atomically increment authors global count trackers cleanly
+                await updateDoc(authorDocumentRef, { upMockCount: increment(1) });
+                targetPost.upMocks.push(activeUserUID);
+                if (targetPost.uid === activeUserUID) {
+                    currentUserData.upMockCount = (currentUserData.upMockCount || 0) + 1;
+                }
+            }
+            
+            if(document.getElementById('screen-feed').classList.contains('active')) {
+                renderPostCollection(localMasterPostsCache, document.getElementById('feed-container'));
+                setupFeedVisibilityIntersectionObserver();
+            } else if(document.getElementById('screen-profile').classList.contains('active')) {
+                renderProfileViewFrame(profileViewUIDContext);
+            } else {
+                executeClientSideSearch();
+            }
+        };
+
+        /* Post Submission Composition Engine */
+        document.getElementById('btn-submit-post').addEventListener('click', async () => {
+            const titleField = document.getElementById('post-title').value.trim();
+            let imgField = document.getElementById('post-img-url').value.trim();
+            const descField = document.getElementById('post-message').value.trim();
+            const tagsChecked = Array.from(document.querySelectorAll('input[name="post-tag"]:checked')).map(cb => cb.value);
+
+            if(!titleField && !imgField && !descField) {
+                alert("Composition Error: Your post must contain textual input or image address URL references.");
+                return;
+            }
+            if(tagsChecked.length === 0) {
+                alert("Classification Required: Choose at least one tag targeting the algorithm framework.");
+                return;
+            }
+
+            // Change submit text state to give dynamic loading user contextual indicators
+            const submitBtn = document.getElementById('btn-submit-post');
+            submitBtn.innerText = "Processing...";
+            submitBtn.disabled = true;
+
+            try {
+                const postObject = {
+                    uid: auth.currentUser ? auth.currentUser.uid : "ADMIN_UID",
+                    username: currentUserData.username,
+                    isLiamMock: currentUserData.isLiamMock || false,
+                    title: titleField,
+                    imageUrl: imgField,
+                    message: descField,
+                    tags: tagsChecked,
+                    upMocks: [],
+                    commentCount: 0, // Performance optimized tracker indexing strategy
+                    timestamp: Date.now()
+                };
+
+                await addDoc(collection(db, "posts"), postObject);
+                
+                // Reset inputs fields across execution loops
+                document.getElementById('post-title').value = "";
+                document.getElementById('post-img-url').value = "";
+                document.getElementById('post-message').value = "";
+                document.querySelectorAll('input[name="post-tag"]').forEach(cb => cb.checked = false);
+                
+                document.getElementById('modal-compose').style.display = 'none';
+                triggerToast("And then he clicked post");
+                
+                // Clear and re-initialize completely on new posts submissions loops
+                lastVisiblePostDoc = null;
+                hasReachedEnd = false;
+                localMasterPostsCache = [];
+                fetchDynamicFeed(false);
+            } catch (err) {
+                alert("Storage Data Transmission Failure: " + err.message);
+            } finally {
+                submitBtn.innerText = "Post";
+                submitBtn.disabled = false;
+            }
+        });
+
+        /* Global Comments Layer Management & High Performance Counter Cache Architecture */
+        window.displayCommentsOverlay = async function(postId) {
+            activePostContextId = postId;
+            document.getElementById('modal-comments').style.display = 'flex';
+            await refreshCommentsStream();
+        };
+
+        async function refreshCommentsStream() {
+            const streamBox = document.getElementById('comments-container');
+            streamBox.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+            
+            const commentsSnapshot = await getDocs(query(collection(db, `posts/${activePostContextId}/comments`), orderBy("timestamp", "asc")));
+            streamBox.innerHTML = "";
+            
+            commentsSnapshot.forEach(docObj => {
+                const comment = docObj.data();
+                const initialChar = comment.username ? comment.username.charAt(0) : "U";
+                const hasCrown = comment.isLiamMock ? `<span class="crown">👑</span>` : "";
+
+                streamBox.innerHTML += `
+                    <div class="comment-node">
+                        <div class="post-user-row" style="margin-bottom:4px;">
+                            <div class="avatar" style="width:24px; height:24px; font-size:11px;">${initialChar}</div>
+                            <span class="username" style="font-size:13px;">${comment.username}${hasCrown}</span>
+                        </div>
+                        <div style="font-size:14px; padding-left:36px;">${comment.text}</div>
+                    </div>
+                `;
+            });
+
+            if(streamBox.innerHTML === "") {
+                streamBox.innerHTML = `<p style="color:var(--text-muted); font-size:14px; text-align:center; padding:20px;">No comments left yet.</p>`;
+            }
+
+            const inputPanel = document.getElementById('comment-input-area');
+            inputPanel.innerHTML = `
+                <input type="text" id="new-comment-text" placeholder="Add your comment..." style="margin:0;">
+                <button class="btn" id="btn-submit-comment" style="width:auto; margin:0; padding:12px 20px;"><i class="fa-solid fa-paper-plane"></i></button>
+            `;
+            document.getElementById('btn-submit-comment').addEventListener('click', postCommentExecution);
+        }
+
+        async function postCommentExecution() {
+            const textInput = document.getElementById('new-comment-text').value.trim();
+            if(!textInput) return;
+
+            const currentSessionUID = auth.currentUser ? auth.currentUser.uid : "ADMIN_UID";
+
+            const payload = {
+                uid: currentSessionUID,
+                username: currentUserData.username,
+                isLiamMock: currentUserData.isLiamMock || false,
+                text: textInput,
+                timestamp: Date.now()
+            };
+
+            // Post document write tracking pipeline operations
+            await addDoc(collection(db, `posts/${activePostContextId}/comments`), payload);
+            
+            // Atomically increment the structural comment tracking integer optimization fast-load
+            const targetedPostDocumentReferenceObj = doc(db, "posts", activePostContextId);
+            await updateDoc(targetedPostDocumentReferenceObj, { commentCount: increment(1) });
+
+            // Refresh indices caches internally
+            const cachedPostIndexLocation = localMasterPostsCache.findIndex(p => p.id === activePostContextId);
+            if(cachedPostIndexLocation !== -1) {
+                localMasterPostsCache[cachedPostIndexLocation].commentCount = (localMasterPostsCache[cachedPostIndexLocation].commentCount || 0) + 1;
+            }
+
+            await refreshCommentsStream();
+            if(document.getElementById('screen-feed').classList.contains('active')) {
+                renderPostCollection(localMasterPostsCache, document.getElementById('feed-container'));
+                setupFeedVisibilityIntersectionObserver();
+            } else if (document.getElementById('screen-profile').classList.contains('active')) {
+                renderProfileViewFrame(profileViewUIDContext);
+            }
+        }
+
+        /* Deep Historical Text Search Filter Engine */
+        function executeClientSideSearch() {
+            const entryText = document.getElementById('search-input').value.toLowerCase().trim();
+            const resultsBox = document.getElementById('search-results');
+            
+            if(!entryText) {
+                resultsBox.innerHTML = `<p style="color:var(--text-muted); padding:20px; text-align:center;">Enter characters above to search historic indexing blocks.</p>`;
+                return;
+            }
+
+            const filteredOutput = localMasterPostsCache.filter(post => {
+                const matchUser = post.username ? post.username.toLowerCase().includes(entryText) : false;
+                const matchTitle = post.title ? post.title.toLowerCase().includes(entryText) : false;
+                const matchBody = post.message ? post.message.toLowerCase().includes(entryText) : false;
+                return matchUser || matchTitle || matchBody;
+            });
+
+            renderPostCollection(filteredOutput, resultsBox);
+        }
+        document.getElementById('search-input').addEventListener('input', executeClientSideSearch);
+
+        /* Personal User Content Sub-Managers (My Posts & Following Lists) Engine Frameworks */
+        document.getElementById('btn-open-my-posts').addEventListener('click', async () => {
+            document.getElementById('modal-my-posts').style.display = 'flex';
+            const targetsBox = document.getElementById('my-posts-container');
+            targetsBox.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Rendering Post Indices...`;
+
+            const querySnapshot = await getDocs(collection(db, "posts"));
+            targetsBox.innerHTML = "";
+            let matchCount = 0;
+
+            querySnapshot.forEach(docObj => {
+                const data = docObj.data();
+                if(auth.currentUser && data.uid === auth.currentUser.uid) {
+                    matchCount++;
+                    targetsBox.innerHTML += `
+                        <div class="nested-manager-item" id="user-post-row-${docObj.id}">
+                            <div style="font-weight:bold; margin-bottom:4px;">${data.title || "(Untitled Content Block)"}</div>
+                            <div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">Posted: ${new Date(data.timestamp).toLocaleDateString()}</div>
+                            <button class="btn btn-danger" style="padding:6px 12px; font-size:13px; width:auto; margin:0;" onclick="window.executeSelfPostDeletion('${docObj.id}')">
+                                <i class="fa-solid fa-trash-can"></i> Delete Post
+                            </button>
+                        </div>
+                    `;
+                }
+            });
+
+            if(matchCount === 0) targetsBox.innerHTML = `<p style="color:var(--text-muted); padding:20px; text-align:center;">You have not published any historical content blocks yet.</p>`;
+        });
+
+        window.executeSelfPostDeletion = async function(postId) {
+            if(!confirm("Are you absolutely sure you want to completely drop this post content record?")) return;
+            await deleteDoc(doc(db, "posts", postId));
+            const targetedElementDomRow = document.getElementById(`user-post-row-${postId}`);
+            if(targetedElementDomRow) targetedElementDomRow.remove();
+            triggerToast("Post successfully dropped.");
+            
+            lastVisiblePostDoc = null;
+            hasReachedEnd = false;
+            localMasterPostsCache = [];
+            fetchDynamicFeed(false);
+            if(document.getElementById('screen-profile').classList.contains('active')) {
+                renderProfileViewFrame(profileViewUIDContext);
+            }
+        };
+
+        document.getElementById('btn-open-my-follows').addEventListener('click', async () => {
+            document.getElementById('modal-my-follows').style.display = 'flex';
+            const container = document.getElementById('my-follows-container');
+            container.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Parsing Connections Matrix...`;
+
+            if(!currentUserData.following || currentUserData.following.length === 0) {
+                container.innerHTML = `<p style="color:var(--text-muted); padding:20px; text-align:center;">You are not currently following any accounts.</p>`;
+                return;
+            }
+
+            container.innerHTML = "";
+            for (const followUID of currentUserData.following) {
+                const docSnapshot = await getDoc(doc(db, "users", followUID));
+                let targetNameDisplay = "Unknown Entity File Profile";
+                if(docSnapshot.exists()) targetNameDisplay = docSnapshot.data().username;
+
+                container.innerHTML += `
+                    <div class="nested-manager-item" id="user-follow-row-${followUID}" style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:bold;"><i class="fa-solid fa-circle-user"></i> ${targetNameDisplay}</span>
+                        <button class="btn btn-danger" style="padding:6px 12px; font-size:13px; width:auto; margin:0;" onclick="window.executeRegistryUnfollow('${followUID}')">
+                            Unfollow
+                        </button>
+                    </div>
+                `;
+            }
+        });
+
+        window.executeRegistryUnfollow = async function(targetUID) {
+            await window.executeFollowPipelineToggle(targetUID, true);
+            const domElementTargetedRow = document.getElementById(`user-follow-row-${targetUID}`);
+            if(domElementTargetedRow) domElementTargetedRow.remove();
+        };
+
+        /* Super-User Administrative Interface & Control Pipeline Operations */
+        async function executeAdminDataPipeline() {
+            const accountsListBox = document.getElementById('admin-accounts-list');
+            const postsListBox = document.getElementById('admin-posts-list');
+
+            accountsListBox.innerHTML = `<p style="padding:10px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading users...</p>`;
+            postsListBox.innerHTML = `<p style="padding:10px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading posts...</p>`;
+
+            // Pull comprehensive system accounts
+            const accountSnapshot = await getDocs(collection(db, "users"));
+            accountsListBox.innerHTML = "";
+            accountSnapshot.forEach(uDoc => {
+                const uData = uDoc.data();
+                accountsListBox.innerHTML += `
+                    <div class="admin-row" id="admin-user-row-${uDoc.id}">
+                        <div class="admin-row-meta">
+                            <div style="font-weight:bold;">${uData.username || "Legacy Account NoName"}</div>
+                            <div style="font-size:11px; color:var(--text-muted); overflow:hidden; text-overflow:ellipsis;">UID: ${uDoc.id}</div>
+                        </div>
+                        <button class="btn btn-danger" style="width:auto; padding:6px 12px; font-size:12px; margin:0;" onclick="window.adminPurgeProfileExecution('${uDoc.id}')">Purge Profile</button>
+                    </div>
+                `;
+            });
+
+            // Pull absolute full logs of all existing posts bypass criteria
+            const postsSnapshot = await getDocs(collection(db, "posts"));
+            postsListBox.innerHTML = "";
+            postsSnapshot.forEach(pDoc => {
+                const pData = pDoc.data();
+                postsListBox.innerHTML += `
+                    <div class="admin-row" id="admin-post-row-${pDoc.id}">
+                        <div class="admin-row-meta">
+                            <div style="font-weight:bold; font-size:14px;">${pData.title || "(No Title)"}</div>
+                            <div style="font-size:12px; color:var(--text-muted);">Author: ${pData.username}</div>
+                        </div>
+                        <button class="btn btn-danger" style="width:auto; padding:6px 12px; font-size:12px; margin:0;" onclick="window.adminPurgePostExecution('${pDoc.id}')">Purge Post</button>
+                    </div>
+                `;
+            });
+        }
+
+        window.adminPurgeProfileExecution = async function(userUID) {
+            if(!confirm("⚠️ SUPER-USER EXECUTING PROFILE DELETION:\nThis drops data records across Firestore registries. Proceed?")) return;
+            await deleteDoc(doc(db, "users", userUID));
+            document.getElementById(`admin-user-row-${userUID}`).remove();
+            triggerToast("Profile Registry Entry Dropped Cleanly.");
+        };
+
+        window.adminPurgePostExecution = async function(postUID) {
+            if(!confirm("⚠️ SUPER-USER EXECUTING ABSOLUTE CONTENT DELETION:\nDrop this post record globally?")) return;
+            await deleteDoc(doc(db, "posts", postUID));
+            document.getElementById(`admin-post-row-${postUID}`).remove();
+            triggerToast("Content Object Purged Completely.");
+            
+            lastVisiblePostDoc = null;
+            hasReachedEnd = false;
+            localMasterPostsCache = [];
+            fetchDynamicFeed(false);
+        };
+
+        document.getElementById('btn-admin-exit').addEventListener('click', () => {
+            isAdminModeBypassActive = false;
+            currentUserData = null;
+            profileViewUIDContext = null;
+            document.getElementById('login-username').value = "";
+            document.getElementById('login-password').value = "";
+            switchScreen('screen-login');
+        });
+
+        /* UI Theme Variable Controller */
+        document.getElementById('btn-toggle-theme').addEventListener('click', () => {
+            const currentMode = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+            document.body.setAttribute('data-theme', currentMode);
+            
+            const statusLabel = document.getElementById('theme-status');
+            statusLabel.innerHTML = currentMode === 'light' ? `<i class="fa-solid fa-sun"></i> Light` : `<i class="fa-solid fa-moon"></i> Dark`;
+            
+            if(auth.currentUser) {
+                updateDoc(doc(db, "users", auth.currentUser.uid), { theme: currentMode });
+                currentUserData.theme = currentMode;
+            }
+        });
+
+        /* Settings Updates Management */
+        function updateSettingsUIDisplay() {
+            document.getElementById('settings-username').value = currentUserData.username || "";
+            document.getElementById('settings-bio').value = currentUserData.bio || "";
+            
+            const isLight = currentUserData.theme === 'light';
+            document.getElementById('theme-status').innerHTML = isLight ? `<i class="fa-solid fa-sun"></i> Light` : `<i class="fa-solid fa-moon"></i> Dark`;
+
+            // Sync structural onboarding preference inputs inside options lists layout spaces
+            if(currentUserData.preferences) {
+                document.querySelectorAll('input[name="settings-pref-tag"]').forEach(checkbox => {
+                    checkbox.checked = currentUserData.preferences.includes(checkbox.value);
+                });
+            }
+        }
+
+        document.getElementById('btn-save-settings').addEventListener('click', async () => {
+            const targetUsername = document.getElementById('settings-username').value.trim();
+            const targetBio = document.getElementById('settings-bio').value.trim();
+            const targetPassword = document.getElementById('settings-password').value;
+            const targetPrefs = Array.from(document.querySelectorAll('input[name="settings-pref-tag"]:checked')).map(cb => cb.value);
+            
+            if(!targetUsername) return;
+
+            let parametersToChange = { 
+                username: targetUsername,
+                bio: targetBio,
+                preferences: targetPrefs
+            };
+
+            await updateDoc(doc(db, "users", auth.currentUser.uid), parametersToChange);
+            
+            currentUserData.username = targetUsername;
+            currentUserData.bio = targetBio;
+            currentUserData.preferences = targetPrefs;
+
+            if(targetPassword && targetPassword.length >= 6) {
+                try {
+                    await updatePassword(auth.currentUser, targetPassword);
+                    document.getElementById('settings-password').value = "";
+                    alert("Profile updates saved successfully!");
+                } catch (e) {
+                    alert("Credentials saved. To verify password updates, please log out and sign back in first.");
+                }
+            } else {
+                alert("Profile credentials updated successfully.");
+            }
+            
+            document.getElementById('modal-settings').style.display = 'none';
+            
+            lastVisiblePostDoc = null;
+            hasReachedEnd = false;
+            localMasterPostsCache = [];
+            
+            // Re-render display view frames to sync interface strings natively
+            fetchDynamicFeed(false);
+            renderProfileViewFrame(auth.currentUser.uid);
+        });
+
+        /* Interface Layout Button Bindings */
+        document.querySelectorAll('.nav-bar .nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const destination = item.getAttribute('data-target');
+                if(destination === 'screen-profile' && auth.currentUser) {
+                    profileViewUIDContext = auth.currentUser.uid;
+                }
+                switchScreen(destination);
+            });
+        });
+
+        /* Attaching infinite scroll listener configuration loops directly onto feed screen wrapper */
+        document.getElementById('screen-feed').addEventListener('scroll', (event) => {
+            const container = event.target;
+            if (container.scrollTop + container.clientHeight >= container.scrollHeight - 150) {
+                fetchDynamicFeed(true);
+            }
+        });
+
+        document.getElementById('global-fab').addEventListener('click', () => { document.getElementById('modal-compose').style.display = 'flex'; });
+        document.getElementById('close-compose').addEventListener('click', () => { document.getElementById('modal-compose').style.display = 'none'; });
+        document.getElementById('close-comments').addEventListener('click', () => { document.getElementById('modal-comments').style.display = 'none'; });
+        document.getElementById('close-my-posts').addEventListener('click', () => { document.getElementById('modal-my-posts').style.display = 'none'; });
+        document.getElementById('close-my-follows').addEventListener('click', () => { document.getElementById('modal-my-follows').style.display = 'none'; });
+        document.getElementById('close-settings').addEventListener('click', () => { document.getElementById('modal-settings').style.display = 'none'; });
+        document.getElementById('close-profile-list-view').addEventListener('click', () => { document.getElementById('modal-profile-list-view').style.display = 'none'; });
+        document.getElementById('feed-reload').addEventListener('click', () => {
+            lastVisiblePostDoc = null;
+            hasReachedEnd = false;
+            localMasterPostsCache = [];
+            fetchDynamicFeed(false);
+        });
+        document.getElementById('btn-logout').addEventListener('click', () => { 
+            document.getElementById('modal-settings').style.display = 'none';
+            signOut(auth); 
+        });
+    </script>
+</body>
+</html>
