@@ -1,0 +1,1982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MockHub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* CSS Variables for Dark/Light Themes */
+        :root {\n            --bg: #000000;
+            --surface: #0a0a0a;
+            --surface-hover: #161616;
+            --border: #2f3336;
+            --text: #e7e9ea;
+            --text-muted: #71767b;
+            --accent: #ffffff;
+            --accent-inverse: #000000;
+            --heart: #f91880;
+            --mock-green: #00ba7c;
+        }
+
+        [data-theme=\"light\"] {
+            --bg: #ffffff;
+            --surface: #f7f9f9;
+            --surface-hover: #eff1f1;
+            --border: #eff3f4;
+            --text: #0f1419;
+            --text-muted: #536471;
+            --accent: #000000;
+            --accent-inverse: #ffffff;
+            --heart: #f91880;
+            --mock-green: #00ba7c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-y: scroll;
+        }
+
+        /* Layout Container */
+        .app-container {
+            display: flex;
+            width: 100%;
+            max-width: 1250px;
+            padding: 0 15px;
+        }
+
+        /* Left Sidebar Nav */
+        .sidebar {
+            width: 275px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px 10px;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            border-right: 1px solid var(--border);
+        }
+
+        .sidebar-top {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .brand-logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            padding: 12px;
+            color: var(--text);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 1.25rem;
+            font-weight: 500;
+            padding: 12px;
+            border-radius: 9999px;
+            color: var(--text);
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background-color: var(--surface-hover);
+        }
+
+        .btn-compose-trigger {
+            background-color: var(--accent);
+            color: var(--accent-inverse);
+            border: none;
+            padding: 15px;
+            border-radius: 9999px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-top: 15px;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+            transition: opacity 0.2s;
+        }
+
+        .btn-compose-trigger:hover {
+            opacity: 0.9;
+        }
+
+        .sidebar-profile-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .sidebar-profile-card:hover {
+            background-color: var(--surface-hover);
+        }
+
+        .profile-meta-mini {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar-mini {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            background-color: #333;
+        }
+
+        .mini-name-stack {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mini-display-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .mini-handle {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        /* Central Timeline & Framework Workspace */
+        .main-workspace {
+            flex: 1;
+            max-width: 600px;
+            border-right: 1px solid var(--border);
+            min-height: 100vh;
+            padding-bottom: 100px;
+        }
+
+        .workspace-header {
+            position: sticky;
+            top: 0;
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 15px;
+            z-index: 10;
+        }
+
+        [data-theme="light"] .workspace-header {
+            background-color: rgba(255, 255, 255, 0.85);
+        }
+
+        .workspace-header h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        /* Auth Panel styling when unauthenticated */
+        .auth-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background-color: var(--bg);
+            z-index: 9999;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            padding: 40px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .auth-card h1 {
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background-color: transparent;
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        .auth-btn {
+            background-color: var(--accent);
+            color: var(--accent-inverse);
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .auth-toggle {
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .auth-toggle span {
+            color: var(--text);
+            text-decoration: underline;
+        }
+
+        /* Profile Sheet Frame Components */
+        .profile-hero-banner {
+            height: 200px;
+            background-color: #333;
+            position: relative;
+        }
+
+        .profile-avatar-placement {
+            position: absolute;
+            bottom: -60px;
+            left: 20px;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px solid var(--bg);
+            object-fit: cover;
+            background-color: #555;
+        }
+
+        .profile-action-row {
+            display: flex;
+            justify-content: flex-end;
+            padding: 15px;
+            min-height: 65px;
+        }
+
+        .btn-profile-action {
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text);
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
+        .btn-profile-action.primary-action {
+            background-color: var(--accent);
+            color: var(--accent-inverse);
+            border: none;
+        }
+
+        .profile-details-block {
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .profile-display-fullname {
+            font-size: 1.4rem;
+            font-weight: 800;
+        }
+
+        .profile-handle-tag {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+        }
+
+        .profile-bio-text {
+            font-size: 1rem;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .profile-metrics-line {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .profile-metrics-line strong {
+            color: var(--text);
+        }
+
+        /* Post Cards System */
+        .post-card {
+            display: flex;
+            gap: 12px;
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .post-card:hover {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        [data-theme="light"] .post-card:hover {
+            background-color: rgba(0, 0, 0, 0.01);
+        }
+
+        .post-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            background-color: #444;
+            flex-shrink: 0;
+        }
+
+        .post-body-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .post-meta-header {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.95rem;
+        }
+
+        .post-author-name {
+            font-weight: 700;
+        }
+
+        .post-author-name:hover {
+            text-decoration: underline;
+        }
+
+        .post-author-handle {
+            color: var(--text-muted);
+        }
+
+        .post-timestamp {
+            color: var(--text-muted);
+        }
+
+        .post-text-payload {
+            font-size: 0.975rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .post-media-attachment {
+            margin-top: 10px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            max-height: 350px;
+        }
+
+        .post-media-attachment img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .post-action-toolbar {
+            display: flex;
+            justify-content: space-between;
+            max-width: 425px;
+            margin-top: 12px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .action-button-unit {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: color 0.15s;
+            background: transparent;
+            border: none;
+            color: inherit;
+        }
+
+        .action-button-unit:hover.action-comment {
+            color: var(--mock-green);
+        }
+
+        .action-button-unit:hover.action-upmock {
+            color: var(--heart);
+        }
+
+        .action-button-unit.active-liked {
+            color: var(--heart);
+        }
+
+        /* Structural Overlay Modals */
+        .modal-mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(91, 112, 131, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 50px;
+            z-index: 1000;
+        }
+
+        .modal-window-box {
+            background-color: var(--bg);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .modal-header-ribbon {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-close-trigger {
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-size: 1.2rem;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close-trigger:hover {
+            background-color: var(--surface-hover);
+        }
+
+        .modal-scrollable-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        /* Compose System Form */
+        .compose-flow-layout {
+            display: flex;
+            gap: 12px;
+        }
+
+        .compose-text-area {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-size: 1.2rem;
+            resize: none;
+            min-height: 120px;
+            outline: none;
+        }
+
+        .compose-footer-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+        }
+
+        .compose-tools-group {
+            display: flex;
+            gap: 15px;
+            color: var(--mock-green);
+            font-size: 1.1rem;
+        }
+
+        .compose-tool-btn {
+            cursor: pointer;
+        }
+
+        /* Right Discovery & Follow Column */
+        .discovery-rail {
+            width: 350px;
+            padding: 20px 0 20px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+        }
+
+        @media (max-width: 1000px) {
+            .discovery-rail {
+                display: none;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .sidebar {
+                width: 70px;
+                align-items: center;
+            }
+            .mini-name-stack, .brand-logo span, .nav-item span, .btn-compose-trigger span {
+                display: none;
+            }
+            .btn-compose-trigger {
+                width: 45px;
+                height: 45px;
+                border-radius: 50%;
+                padding: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+        .search-bar-wrap {
+            position: relative;
+        }
+
+        .search-bar-wrap i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .search-input-field {
+            width: 100%;
+            padding: 12px 12px 12px 45px;
+            border-radius: 9999px;
+            background-color: var(--surface);
+            border: 1px solid transparent;
+            color: var(--text);
+            outline: none;
+        }
+
+        .search-input-field:focus {
+            background-color: var(--bg);
+            border-color: var(--mock-green);
+        }
+
+        .widget-box {
+            background-color: var(--surface);
+            border-radius: 16px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .widget-box h3 {
+            font-size: 1.15rem;
+            font-weight: 800;
+        }
+
+        .user-row-recommendation {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        /* Comments Engine UI */
+        .comment-thread-anchor-post {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        .comment-input-block {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .comment-field {
+            flex: 1;
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            padding: 10px;
+            outline: none;
+            resize: none;
+            height: 60px;
+        }
+
+        .comment-item-card {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* Follow Management UI */
+        .follow-tab-headers {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 15px;
+        }
+
+        .follow-tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        .follow-tab.active {
+            color: var(--text);
+            border-bottom: 3px solid var(--mock-green);
+        }
+
+        /* Profile Selection Dialog UI List layout */
+        .profile-list-view-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+        .profile-list-view-row:hover {
+            background-color: var(--surface-hover);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="auth-shield" class="auth-container" style="display: none;">
+        <div class="auth-card">
+            <h1 id="auth-title">Join MockHub</h1>
+            <input type="text" id="auth-username-field" class="auth-input" placeholder="Unique Username Handle (eg. liam_mock)" style="display: block;">
+            <input type="text" id="auth-fullname-field" class="auth-input" placeholder="Display Full Name" style="display: block;">
+            <input type="email" id="auth-email-field" class="auth-input" placeholder="Email Address">
+            <input type="password" id="auth-password-field" class="auth-input" placeholder="Password">
+            <button id="auth-primary-btn" class="auth-btn">Create Account</button>
+            <div id="auth-switcher" class="auth-toggle">Already have an account? <span>Log In</span></div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-top">
+                <a href="#" class="brand-logo" id="logo-home-trigger">
+                    <i class="fa-solid fa-cubes"></i>
+                    <span>MockHub</span>
+                </a>
+                <div class="nav-item active" id="nav-home">
+                    <i class="fa-solid fa-house"></i>
+                    <span>Home Feed</span>
+                </div>
+                <div class="nav-item" id="nav-my-posts">
+                    <i class="fa-solid fa-user"></i>
+                    <span>My Posts</span>
+                </div>
+                <div class="nav-item" id="nav-my-follows">
+                    <i class="fa-solid fa-user-group"></i>
+                    <span>Follow Management</span>
+                </div>
+                <div class="nav-item" id="nav-settings">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </div>
+                <button class="btn-compose-trigger" id="action-compose-trigger">
+                    <i class="fa-solid fa-feather-pointed"></i>
+                    <span>Mock Post</span>
+                </button>
+            </div>
+
+            <div class="sidebar-profile-card" id="sidebar-current-profile-btn">
+                <div class="profile-meta-mini">
+                    <img id="sidebar-avatar" class="avatar-mini" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23555'/></svg>" alt="Your Profile">
+                    <div class="mini-name-stack">
+                        <span id="sidebar-fullname" class="mini-display-name">Guest</span>
+                        <span id="sidebar-handle" class="mini-handle">@guest</span>
+                    </div>
+                </div>
+                <i class="fa-solid fa-ellipsis" style="color: var(--text-muted);"></i>
+            </div>
+        </aside>
+
+        <main class="main-workspace">
+            <div class="workspace-header">
+                <h2 id="workspace-title-text">Home Timeline</h2>
+            </div>
+            
+            <div id="core-feed-stream-target">
+                </div>
+
+            <div style="padding: 20px; text-align: center;">
+                <button id="feed-reload" class="btn-profile-action" style="width: 100%;"><i class="fa-solid fa-rotate-right"></i> Refresh Updates</button>
+            </div>
+        </main>
+
+        <aside class="discovery-rail">
+            <div class="search-bar-wrap">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="global-search-input" class="search-input-field" placeholder="Search handles or names...">
+            </div>
+
+            <div class="widget-box">
+                <h3>Who to Mock With</h3>
+                <div id="discovery-suggestions-target" style="display: flex; flex-direction: column; gap: 12px;">
+                    </div>
+            </div>
+        </aside>
+    </div>
+
+    <div id="modal-compose" class="modal-mask" style="display: none;">
+        <div class="modal-window-box">
+            <div class="modal-header-ribbon">
+                <h3>Compose Mock Card</h3>
+                <button id="close-compose" class="modal-close-trigger"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-scrollable-body">
+                <div class="compose-flow-layout">
+                    <img id="compose-avatar" class="post-avatar" src="" alt="">
+                    <div style="flex: 1;">
+                        <textarea id="compose-text" class="compose-text-area" placeholder="What is happening, friend of Liam Mock?"></textarea>
+                        
+                        <div id="compose-attachment-preview" style="display:none; position:relative; margin-top:10px; max-height:200px; overflow:hidden; border-radius:12px;">
+                            <img id="attachment-preview-img" src="" style="width:100%; object-fit:cover;">
+                            <button id="clear-attachment-btn" style="position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.7); border:none; color:white; border-radius:50%; width:30px; height:30px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+
+                        <div class="compose-footer-panel">
+                            <div class="compose-tools-group">
+                                <label for="attachment-file-input" class="compose-tool-btn">
+                                    <i class="fa-regular fa-image"></i>
+                                </label>
+                                <input type="file" id="attachment-file-input" accept="image/*" style="display: none;">
+                            </div>
+                            <button id="btn-submit-post" class="btn-profile-action primary-action" style="padding: 8px 24px;">Mock</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-comments" class="modal-mask" style="display: none;">
+        <div class="modal-window-box">
+            <div class="modal-header-ribbon">
+                <h3>Comments & Feedback</h3>
+                <button id="close-comments" class="modal-close-trigger"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-scrollable-body">
+                <div id="comment-anchor-post-target" class="comment-thread-anchor-post"></div>
+                
+                <div class="comment-input-block">
+                    <textarea id="reply-input-text" class="comment-field" placeholder="Post your reply interaction..."></textarea>
+                    <button id="btn-submit-comment" class="btn-profile-action primary-action" style="align-self: flex-end;">Reply</button>
+                </div>
+
+                <div id="comments-list-stream-target">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-my-posts" class="modal-mask" style="display: none;">
+        <div class="modal-window-box">
+            <div class="modal-header-ribbon">
+                <h3>My Personal Logs</h3>
+                <button id="close-my-posts" class="modal-close-trigger"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-scrollable-body" id="my-posts-stream-target" style="padding:0;">
+                </div>
+        </div>
+    </div>
+
+    <div id="modal-my-follows" class="modal-mask" style="display: none;">
+        <div class="modal-window-box">
+            <div class="modal-header-ribbon">
+                <h3>Follow Management Node</h3>
+                <button id="close-my-follows" class="modal-close-trigger"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="follow-tab-headers">
+                <div id="tab-following-toggle" class="follow-tab active">Following (<span id="count-following-lbl">0</span>)</div>
+                <div id="tab-followers-toggle" class="follow-tab">Followers (<span id="count-followers-lbl">0</span>)</div>
+            </div>
+            <div class="modal-scrollable-body" id="follow-relations-list-target" style="padding:0;">
+                </div>
+        </div>
+    </div>
+
+    <div id="modal-settings" class="modal-mask" style="display: none;">
+        <div class="modal-window-box">
+            <div class="modal-header-ribbon">
+                <h3>Account Settings & Profile Studio</h3>
+                <button id="close-settings" class="modal-close-trigger"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-scrollable-body" style="display: flex; flex-direction: column; gap: 20px;">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <label style="font-weight:700; font-size:0.9rem; color:var(--text-muted);">DISPLAY FULL NAME</label>
+                    <input type="text" id="settings-fullname" class="auth-input">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <label style="font-weight:700; font-size:0.9rem; color:var(--text-muted);">BIOGRAPHY STATUS</label>
+                    <textarea id="settings-bio" class="auth-input" style="resize:vertical; min-height:80px;"></textarea>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <label style="font-weight:700; font-size:0.9rem; color:var(--text-muted);">AVATAR IMAGE URL</label>
+                    <input type="text" id="settings-avatar-url" class="auth-input" placeholder="https://example.com/image.png">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <label style="font-weight:700; font-size:0.9rem; color:var(--text-muted);">THEME CONFIGURATION</label>
+                    <select id="settings-theme-select" class="auth-input" style="background-color: var(--surface);">
+                        <option value="dark">Dim Dim Dark</option>
+                        <option value="light">Bright Clean Light</option>
+                    </select>
+                </div>
+                
+                <button id="btn-save-settings" class="btn-profile-action primary-action" style="margin-top: 10px; padding:12px;">Commit Changes</button>
+                <button id="btn-logout" class="btn-profile-action" style="border-color: var(--heart); color: var(--heart);">Sign Out Account Node</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-profile-list-view" class="modal-mask" style="display: none;">
+        <div class="modal-window-box">
+            <div class="modal-header-ribbon">
+                <h3 id="profile-list-view-title">Discovered Connections</h3>
+                <button id="close-profile-list-view" class="modal-close-trigger"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-scrollable-body" id="profile-list-view-container-target" style="padding:0;">
+                </div>
+        </div>
+    </div>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            onAuthStateChanged, 
+            signOut 
+        } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            setDoc, 
+            getDoc, 
+            updateDoc, 
+            collection, 
+            addDoc, 
+            query, 
+            where, 
+            orderBy, 
+            limit, 
+            getDocs, 
+            startAfter, 
+            increment, 
+            arrayUnion, 
+            arrayRemove,
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+        // Firebase Configuration Context Credentials
+        const firebaseConfig = {
+            apiKey: "AIzaSyAs7K0exampleConfigValuePlaceholder",
+            authDomain: "mockhub-app.firebaseapp.com",
+            projectId: "mockhub-app",
+            storageBucket: "mockhub-app.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abcdef123456"
+        };
+
+        // Initialize connection layers instances
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Core Global Application Variable Engine state pools
+        let currentUserData = null;
+        let activeUserUID = null;
+        let currentAuthWorkflowState = "register"; // register vs login toggles
+        let localMasterPostsCache = [];
+        let lastVisiblePostDoc = null;
+        let isFetchingFeedBatch = false;
+        let hasReachedEnd = false;
+        const POSTS_PAGINATION_LIMIT = 15;
+        let currentTargetCommentPostId = null;
+        let activeFollowManagementTab = "following";
+
+        // Authentication Interface manager state controller
+        function setupAuthVisualState() {
+            const title = document.getElementById("auth-title");
+            const userField = document.getElementById("auth-username-field");
+            const nameField = document.getElementById("auth-fullname-field");
+            const primaryBtn = document.getElementById("auth-primary-btn");
+            const switcher = document.getElementById("auth-switcher");
+
+            if (currentAuthWorkflowState === "register") {
+                title.innerText = "Join MockHub Space";
+                userField.style.display = "block";
+                nameField.style.display = "block";
+                primaryBtn.innerText = "Create Account Asset";
+                switcher.innerHTML = "Already have an account? <span>Log In</span>";
+            } else {
+                title.innerText = "Welcome Back to MockHub";
+                userField.style.display = "none";
+                nameField.style.display = "none";
+                primaryBtn.innerText = "Authorize Access";
+                switcher.innerHTML = "New to the Liam network? <span>Register Account</span>";
+            }
+        }
+
+        document.getElementById("auth-switcher").addEventListener("click", () => {
+            currentAuthWorkflowState = currentAuthWorkflowState === "register" ? "login" : "register";
+            setupAuthVisualState();
+        });
+
+        document.getElementById("auth-primary-btn").addEventListener("click", async () => {
+            const email = document.getElementById("auth-email-field").value.trim();
+            const password = document.getElementById("auth-password-field").value.trim();
+            const username = document.getElementById("auth-username-field").value.trim().toLowerCase();
+            const fullname = document.getElementById("auth-fullname-field").value.trim();
+
+            if (!email || !password) return alert("Please specify core credentials.");
+
+            if (currentAuthWorkflowState === "register") {
+                if (!username || !fullname) return alert("Please fill complete profile metadata fields.");
+                try {
+                    // Check handle uniqueness reservation rule state
+                    const uniqueCheckRef = doc(db, "usernames", username);
+                    const uniqueCheckSnap = await getDoc(uniqueCheckRef);
+                    if (uniqueCheckSnap.exists()) return alert("Username handle already taken by another network node.");
+
+                    const credentialRecord = await createUserWithEmailAndPassword(auth, email, password);
+                    const systemUid = credentialRecord.user.uid;
+
+                    const defaultUserPayload = {
+                        uid: systemUid,
+                        username: username,
+                        fullname: fullname,
+                        bio: "Active participant inside Liam Mock's communication app framework structure.",
+                        avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=${username}`,
+                        theme: "dark",
+                        followingCount: 0,
+                        followersCount: 0,
+                        upMockCount: 0,
+                        commentCount: 0,
+                        createdTimestamp: serverTimestamp()
+                    };
+
+                    await setDoc(doc(db, "users", systemUid), defaultUserPayload);
+                    await setDoc(doc(db, "usernames", username), { uid: systemUid });
+
+                    document.getElementById("auth-shield").style.display = "none";
+                } catch (error) {
+                    alert("Registration Error Sequence: " + error.message);
+                }
+            } else {
+                try {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    document.getElementById("auth-shield").style.display = "none";
+                } catch (error) {
+                    alert("Authorization Access Error: " + error.message);
+                }
+            }
+        });
+
+        // Monitor Auth Lifecycles status loop sequences
+        onAuthStateChanged(auth, async (authenticatedUser) => {
+            if (authenticatedUser) {
+                activeUserUID = authenticatedUser.uid;
+                const dynamicAccountDocRef = doc(db, "users", activeUserUID);
+                const dynamicAccountSnapshot = await getDoc(dynamicAccountDocRef);
+
+                if (dynamicAccountSnapshot.exists()) {
+                    currentUserData = dynamicAccountSnapshot.data();
+                    syncCurrentUserUIFrameworkContext();
+                    document.getElementById("auth-shield").style.display = "none";
+                    
+                    // Fire timeline boot configurations arrays
+                    lastVisiblePostDoc = null;
+                    hasReachedEnd = false;
+                    localMasterPostsCache = [];
+                    fetchDynamicFeed(false);
+                    fetchWhoToFollowSuggestions();
+                } else {
+                    currentAuthWorkflowState = "register";
+                    setupAuthVisualState();
+                    document.getElementById("auth-shield").style.display = "flex";
+                }
+            } else {
+                currentUserData = null;
+                activeUserUID = null;
+                setupAuthVisualState();
+                document.getElementById("auth-shield").style.display = "flex";
+            }
+        });
+
+        function syncCurrentUserUIFrameworkContext() {
+            if (!currentUserData) return;
+            document.body.setAttribute("data-theme", currentUserData.theme || "dark");
+            document.getElementById("settings-theme-select").value = currentUserData.theme || "dark";
+            
+            document.getElementById("sidebar-fullname").innerText = currentUserData.fullname || "Anonymous User";
+            document.getElementById("sidebar-handle").innerText = "@" + (currentUserData.username || "unknown");
+            if (currentUserData.avatarUrl) {
+                document.getElementById("sidebar-avatar").src = currentUserData.avatarUrl;
+                document.getElementById("compose-avatar").src = currentUserData.avatarUrl;
+            }
+            document.getElementById("settings-fullname").value = currentUserData.fullname || "";
+            document.getElementById("settings-bio").value = currentUserData.bio || "";
+            document.getElementById("settings-avatar-url").value = currentUserData.avatarUrl || "";
+        }
+
+        // Image Attachment Handler Layer Logic code routine
+        let activeBase64AttachmentData = null;
+        document.getElementById("attachment-file-input").addEventListener("change", function(e) {
+            const targetFile = e.target.files[0];
+            if (!targetFile) return;
+            
+            const fileReader = new FileReader();
+            fileReader.onload = function(evt) {
+                activeBase64AttachmentData = evt.target.result;
+                document.getElementById("attachment-preview-img").src = activeBase64AttachmentData;
+                document.getElementById("compose-attachment-preview").style.display = "block";
+            };
+            fileReader.readAsDataURL(targetFile);
+        });
+
+        document.getElementById("clear-attachment-btn").addEventListener("click", function() {
+            activeBase64AttachmentData = null;
+            document.getElementById("attachment-file-input").value = "";
+            document.getElementById("compose-attachment-preview").style.display = "none";
+            document.getElementById("attachment-preview-img").src = "";
+        });
+
+        // Write New Post Function pipeline layout configuration
+        document.getElementById("btn-submit-post").addEventListener("click", async () => {
+            const contentStringPayload = document.getElementById("compose-text").value.trim();
+            if (!contentStringPayload && !activeBase64AttachmentData) return alert("Cannot broadcast blank post content packets.");
+
+            try {
+                const newPostRecordObject = {
+                    uid: activeUserUID,
+                    authorName: currentUserData.fullname || "No Name Node",
+                    authorHandle: currentUserData.username || "anonymous",
+                    authorAvatar: currentUserData.avatarUrl || "",
+                    textPayload: contentStringPayload,
+                    attachmentData: activeBase64AttachmentData, // inline data asset storage payload
+                    upMockCount: 0,
+                    upMocks: [],
+                    commentCount: 0,
+                    timestamp: serverTimestamp()
+                };
+
+                await addDoc(collection(db, "posts"), newPostRecordObject);
+                
+                // Clear post asset states
+                document.getElementById("compose-text").value = "";
+                activeBase64AttachmentData = null;
+                document.getElementById("attachment-file-input").value = "";
+                document.getElementById("compose-attachment-preview").style.display = "none";
+                document.getElementById("attachment-preview-img").src = "";
+                document.getElementById("modal-compose").style.display = "none";
+
+                // Trigger atomic update increment routines locally on active account properties configuration matrix mapping
+                currentUserData.upMockCount = currentUserData.upMockCount || 0; // maintain status quo properties
+                
+                // Refresh Timeline to view update broadcast
+                lastVisiblePostDoc = null;
+                hasReachedEnd = false;
+                localMasterPostsCache = [];
+                fetchDynamicFeed(false);
+
+            } catch (error) {
+                alert("Submission Pipeline Exception Error: " + error.message);
+            }
+        });
+
+        // Engine query data fetch loop array timeline pipeline architecture structure
+        async function fetchDynamicFeed(appendMode = false) {
+            if (isFetchingFeedBatch || hasReachedEnd) return;
+            isFetchingFeedBatch = true;
+
+            try {
+                let postsCollectionQueryRef = query(collection(db, "posts"), orderBy("timestamp", "desc"), limit(POSTS_PAGINATION_LIMIT));
+                if (appendMode && lastVisiblePostDoc) {
+                    postsCollectionQueryRef = query(collection(db, "posts"), orderBy("timestamp", "desc"), startAfter(lastVisiblePostDoc), limit(POSTS_PAGINATION_LIMIT));
+                }
+
+                const searchResultSnapshot = await getDocs(postsCollectionQueryRef);
+                if (searchResultSnapshot.empty) {
+                    hasReachedEnd = true;
+                    if (!appendMode) {
+                        document.getElementById("core-feed-stream-target").innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted);">No feed updates exist inside this timeline matrix node yet.</div>`;
+                    }
+                    isFetchingFeedBatch = false;
+                    return;
+                }
+
+                lastVisiblePostDoc = searchResultSnapshot.docs[searchResultSnapshot.docs.length - 1];
+                
+                const loadedBatchRows = [];
+                searchResultSnapshot.forEach((docRecord) => {
+                    const extractedData = docRecord.data();
+                    extractedData.id = docRecord.id;
+                    loadedBatchRows.push(extractedData);
+                });
+
+                if (appendMode) {
+                    localMasterPostsCache = localMasterPostsCache.concat(loadedBatchRows);
+                } else {
+                    localMasterPostsCache = loadedBatchRows;
+                }
+
+                renderMasterCacheTimelineToDOM();
+            } catch (e) {
+                console.error("Timeline query process failed: ", e);
+            } finally {
+                isFetchingFeedBatch = false;
+            }
+        }
+
+        function renderMasterCacheTimelineToDOM() {
+            const containerNode = document.getElementById("core-feed-stream-target");
+            containerNode.innerHTML = "";
+
+            localMasterPostsCache.forEach((postItem) => {
+                const likedActiveStatusCss = (postItem.upMocks && postItem.upMocks.includes(activeUserUID)) ? "active-liked" : "";
+                const dateParsedString = postItem.timestamp ? new Date(postItem.timestamp.seconds * 1000).toLocaleDateString() : "Just Now";
+                
+                let mediaAttachmentHtml = "";
+                if (postItem.attachmentData) {
+                    mediaAttachmentHtml = `<div class="post-media-attachment"><img src="${postItem.attachmentData}" alt="Uploaded Asset Document"></div>`;
+                }
+
+                const postCardMarkupLayout = `
+                    <div class="post-card" onclick="window.handlePostCardClickWrapper(event, '${postItem.id}')">
+                        <img class="post-avatar" src="${postItem.authorAvatar}" alt="" onclick="window.interceptProfileNavigate(event, '${postItem.uid}')">
+                        <div class="post-body-content">
+                            <div class="post-meta-header">
+                                <span class="post-author-name" onclick="window.interceptProfileNavigate(event, '${postItem.uid}')">${postItem.authorName}</span>
+                                <span class="post-author-handle">@${postItem.authorHandle}</span>
+                                <span style="color:var(--text-muted); font-size:0.8rem;">•</span>
+                                <span class="post-timestamp">${dateParsedString}</span>
+                            </div>
+                            <div class="post-text-payload">${escapeHtmlEngineEntities(postItem.textPayload)}</div>
+                            ${mediaAttachmentHtml}
+                            <div class="post-action-toolbar">
+                                <button class="action-button-unit action-comment" onclick="window.executeCommentViewTrigger(event, '${postItem.id}')">
+                                    <i class="fa-regular fa-comment"></i>
+                                    <span>${postItem.commentCount || 0}</span>
+                                </button>
+                                <button class="action-button-unit action-upmock ${likedActiveStatusCss}" onclick="window.executeUpMockToggle(event, '${postItem.id}')">
+                                    <i class="fa-solid fa-heart-crack"></i>
+                                    <span>${postItem.upMockCount || 0}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                containerNode.insertAdjacentHTML("beforeend", postCardMarkupLayout);
+            });
+        }
+
+        window.handlePostCardClickWrapper = function(event, postId) {
+            // Prevent execution if interacting directly with native action tool buttons mapping layers
+            if (event.target.closest('.post-action-toolbar') || event.target.closest('.post-avatar') || event.target.closest('.post-author-name')) {
+                return;
+            }
+            window.executeCommentViewTrigger(event, postId);
+        };
+
+        // Escaping helper mapping layer to secure strings
+        function escapeHtmlEngineEntities(rawString) {
+            if(!rawString) return "";
+            return rawString.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // Action Trigger Toggle Mechanism for Up Mocks Like System Engine
+        window.executeUpMockToggle = async function(event, postId) {
+            event.stopPropagation();
+            if (!activeUserUID) return;
+
+            const matchIndex = localMasterPostsCache.findIndex(p => p.id === postId);
+            if (matchIndex === -1) return;
+
+            const targetPost = localMasterPostsCache[matchIndex];
+            const postDocumentRef = doc(db, "posts", postId);
+            const authorDocumentRef = doc(db, "users", targetPost.uid);
+
+            if (!targetPost.upMocks) targetPost.upMocks = [];
+
+            if (targetPost.upMocks.includes(activeUserUID)) {
+                // Remove Up Mock process sequence loop operations matrix properties parameters
+                targetPost.upMocks = targetPost.upMocks.filter(uid => uid !== activeUserUID);
+                targetPost.upMockCount = Math.max(0, (targetPost.upMockCount || 1) - 1);
+                
+                await updateDoc(postDocumentRef, {
+                    upMocks: arrayRemove(activeUserUID),
+                    upMockCount: increment(-1)
+                });
+                await updateDoc(authorDocumentRef, {
+                    upMockCount: increment(-1)
+                });
+
+                if (targetPost.uid === activeUserUID) {
+                    currentUserData.upMockCount = Math.max(0, (currentUserData.upMockCount || 0) - 1);
+                }
+            } else {
+                // Add Up Mock property registration node process flow configuration operations
+                targetPost.upMocks.push(activeUserUID);
+                targetPost.upMockCount = (targetPost.upMockCount || 0) + 1;
+
+                await updateDoc(postDocumentRef, {
+                    upMocks: arrayUnion(activeUserUID),
+                    upMockCount: increment(1)
+                });
+                await updateDoc(authorDocumentRef, {
+                    upMockCount: increment(1)
+                });
+
+                if (targetPost.uid === activeUserUID) {
+                    currentUserData.upMockCount = (currentUserData.upMockCount || 0) + 1;
+                }
+            }
+
+            renderMasterCacheTimelineToDOM();
+            
+            // If viewing a dynamic active profile sheet framework target view overlay state frame, patch counters live
+            const activeProfileWorkspaceViewNode = document.getElementById(`dynamic-profile-metrics-line-node-${targetPost.uid}`);
+            if (activeProfileWorkspaceViewNode) {
+                // Recommendation A Strategy: Re-sum all likes dynamically across active loaded profile history snapshot context records
+                const profilePostsQueryRef = query(collection(db, "posts"), where("uid", "==", targetPost.uid));
+                const pulledPostsSnapshot = await getDocs(profilePostsQueryRef);
+                let dynamicAccumulatedUpMocksSum = 0;
+                pulledPostsSnapshot.forEach((postDoc) => {
+                    const postDocData = postDoc.data();
+                    if (postDocData.upMocks && Array.isArray(postDocData.upMocks)) {
+                        dynamicAccumulatedUpMocksSum += postDocData.upMocks.length;
+                    }
+                });
+                const upmocksCounter = document.getElementById(`profile-total-upmocks-counter-lbl-${targetPost.uid}`);
+                if (upmocksCounter) {
+                    upmocksCounter.innerText = dynamicAccumulatedUpMocksSum;
+                }
+            }
+        };
+
+        // Comments System Dialog Logic engine functions workspace
+        window.executeCommentViewTrigger = async function(event, postId) {
+            if(event) event.stopPropagation();
+            currentTargetCommentPostId = postId;
+            
+            const matchIndex = localMasterPostsCache.findIndex(p => p.id === postId);
+            if (matchIndex === -1) return;
+            const sourcePostData = localMasterPostsCache[matchIndex];
+
+            const anchorTargetNode = document.getElementById("comment-anchor-post-target");
+            const parsedCommentCardDate = sourcePostData.timestamp ? new Date(sourcePostData.timestamp.seconds * 1000).toLocaleDateString() : "Just Now";
+            
+            let anchorImageMarkup = "";
+            if (sourcePostData.attachmentData) {
+                anchorImageMarkup = `<div class="post-media-attachment"><img src="${sourcePostData.attachmentData}"></div>`;
+            }
+
+            anchorTargetNode.innerHTML = `
+                <div style="display:flex; gap:12px;">
+                    <img class="post-avatar" src="${sourcePostData.authorAvatar}">
+                    <div style="flex:1;">
+                        <div class="post-meta-header">
+                            <span class="post-author-name">${sourcePostData.authorName}</span>
+                            <span class="post-author-handle">@${sourcePostData.authorHandle}</span>
+                            <span style="color:var(--text-muted); font-size:0.8rem;">•</span>
+                            <span class="post-timestamp">${parsedCommentCardDate}</span>
+                        </div>
+                        <div class="post-text-payload" style="font-size:1.1rem; margin:10px 0;">${escapeHtmlEngineEntities(sourcePostData.textPayload)}</div>
+                        ${anchorImageMarkup}
+                    </div>
+                </div>
+            `;
+
+            document.getElementById("reply-input-text").value = "";
+            document.getElementById("modal-comments").style.display = "flex";
+
+            // Download related comments collection set list snapshots
+            await fetchCommentsStreamList(postId);
+        };
+
+        async function fetchCommentsStreamList(postId) {
+            const containerNode = document.getElementById("comments-list-stream-target");
+            containerNode.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted);"><i class="fa-solid fa-circle-notch fa-spin"></i> Indexing reactions...</div>`;
+
+            try {
+                const commentsQueryRef = query(collection(db, "posts", postId, "comments"), orderBy("timestamp", "asc"));
+                const snapshotRecords = await getDocs(commentsQueryRef);
+                
+                containerNode.innerHTML = "";
+                if(snapshotRecords.empty) {
+                    containerNode.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted);">Be the first one to comment on Liam's friend's update log node!</div>`;
+                    return;
+                }
+
+                snapshotRecords.forEach((commentDoc) => {
+                    const cData = commentDoc.data();
+                    const cDate = cData.timestamp ? new Date(cData.timestamp.seconds * 1000).toLocaleDateString() : "Recent";
+                    
+                    const commentRowLayoutMarkup = `
+                        <div class="comment-item-card">
+                            <img class="post-avatar" style="width:36px; height:36px;" src="${cData.authorAvatar}">
+                            <div style="flex:1;">
+                                <div class="post-meta-header">
+                                    <span class="post-author-name" style="font-size:0.9rem;">${cData.authorName}</span>
+                                    <span class="post-author-handle" style="font-size:0.85rem;">@${cData.authorHandle}</span>
+                                    <span style="color:var(--text-muted); font-size:0.75rem;">•</span>
+                                    <span class="post-timestamp" style="font-size:0.85rem;">${cDate}</span>
+                                </div>
+                                <div class="post-text-payload" style="font-size:0.9rem; margin-top:4px;">${escapeHtmlEngineEntities(cData.commentText)}</div>
+                            </div>
+                        </div>
+                    `;
+                    containerNode.insertAdjacentHTML("beforeend", commentRowLayoutMarkup);
+                });
+
+            } catch (err) {
+                containerNode.innerHTML = `<div style="padding:20px; text-align:center; color:var(--heart);">Failed to resolve comments framework indices tree nodes.</div>`;
+            }
+        }
+
+        document.getElementById("btn-submit-comment").addEventListener("click", async () => {
+            const replyValueText = document.getElementById("reply-input-text").value.trim();
+            if(!replyValueText || !currentTargetCommentPostId) return;
+
+            try {
+                const commentPayloadObj = {
+                    uid: activeUserUID,
+                    authorName: currentUserData.fullname,
+                    authorHandle: currentUserData.username,
+                    authorAvatar: currentUserData.avatarUrl,
+                    commentText: replyValueText,
+                    timestamp: serverTimestamp()
+                };
+
+                await addDoc(collection(db, "posts", currentTargetCommentPostId, "comments"), commentPayloadObj);
+                
+                // Track aggregate logic counters increment actions across database document references configurations layers maps
+                await updateDoc(doc(db, "posts", currentTargetCommentPostId), { commentCount: increment(1) });
+                await updateDoc(doc(db, "users", activeUserUID), { commentCount: increment(1) });
+                currentUserData.commentCount = (currentUserData.commentCount || 0) + 1;
+
+                // Sync the cached parent object values state properties parameters list tracking map arrays
+                const matchIndex = localMasterPostsCache.findIndex(p => p.id === currentTargetCommentPostId);
+                if (matchIndex !== -1) {
+                    localMasterPostsCache[matchIndex].commentCount = (localMasterPostsCache[matchIndex].commentCount || 0) + 1;
+                }
+
+                document.getElementById("reply-input-text").value = "";
+                renderMasterCacheTimelineToDOM();
+                await fetchCommentsStreamList(currentTargetCommentPostId);
+
+            } catch(ex) {
+                alert("Comment submission process node aborted with error context: " + ex.message);
+            }
+        });
+
+        // Profile Sheet Visual Frame Router Renderer Module logic configuration block
+        window.interceptProfileNavigate = async function(event, targetUID) {
+            if(event) event.stopPropagation();
+            
+            // Clean up visual selection states inside primary left sidebar row nodes arrays list selections structures
+            document.querySelectorAll(".nav-item").forEach(item => item.classList.remove("active"));
+            document.getElementById("workspace-title-text").innerText = "User Environment Profile Sheet View";
+
+            const coreContainerNode = document.getElementById("core-feed-stream-target");
+            coreContainerNode.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted);"><i class="fa-solid fa-circle-notch fa-spin"></i> Constructing profile view modules space...</div>`;
+
+            try {
+                // Pull core account records structure information properties definitions variables maps
+                const targetProfileDocRef = doc(db, "users", targetUID);
+                const fetchedProfileSnapshot = await getDoc(targetProfileDocRef);
+
+                if(!fetchedProfileSnapshot.exists()) {
+                    coreContainerNode.innerHTML = `<div style="padding:40px; text-align:center; color:var(--heart);">The selected user account reference does not map back to a valid registered entity node container.</div>`;
+                    return;
+                }
+
+                const profileDocData = fetchedProfileSnapshot.data();
+
+                // Check active follower relationship configurations paths mapping criteria logs
+                let followActionBtnMarkup = "";
+                if (targetUID !== activeUserUID) {
+                    const explicitRelationshipFollowNodeRef = doc(db, "users", activeUserUID, "following", targetUID);
+                    const followRelationshipSnapshot = await getDoc(explicitRelationshipFollowNodeRef);
+                    
+                    if (followRelationshipSnapshot.exists()) {
+                        followActionBtnMarkup = `<button class="btn-profile-action" onclick="window.triggerFollowToggleActionRoutine(event, '${targetUID}', true)">Unfollow</button>`;
+                    } else {
+                        followActionBtnMarkup = `<button class="btn-profile-action primary-action" onclick="window.triggerFollowToggleActionRoutine(event, '${targetUID}', false)">Follow Node</button>`;
+                    }
+                } else {
+                    followActionBtnMarkup = `<button class="btn-profile-action" onclick="document.getElementById('modal-settings').style.display='flex';">Edit Studio Profile</button>`;
+                }
+
+                // Query and fetch all individual posts associated with this target profile
+                const profilePostsQueryRef = query(collection(db, "posts"), where("uid", "==", targetUID));
+                const pulledPostsSnapshot = await getDocs(profilePostsQueryRef);
+
+                // Recommendation A Strategy: Accumulate the sum of up mocks directly from the loaded collection timeline list
+                let dynamicAccumulatedUpMocksSum = 0;
+                let userSpecificPostsArrayMarkupHtml = "";
+
+                pulledPostsSnapshot.forEach((postDoc) => {
+                    const postDocData = postDoc.data();
+                    postDocData.id = postDoc.id;
+                    
+                    if (postDocData.upMocks && Array.isArray(postDocData.upMocks)) {
+                        dynamicAccumulatedUpMocksSum += postDocData.upMocks.length;
+                    }
+
+                    const likedActiveStatusCss = (postDocData.upMocks && postDocData.upMocks.includes(activeUserUID)) ? "active-liked" : "";
+                    const dateParsedString = postDocData.timestamp ? new Date(postDocData.timestamp.seconds * 1000).toLocaleDateString() : "Just Now";
+                    let mediaAttachmentHtml = "";
+                    if (postDocData.attachmentData) {
+                        mediaAttachmentHtml = `<div class="post-media-attachment"><img src="${postDocData.attachmentData}"></div>`;
+                    }
+
+                    userSpecificPostsArrayMarkupHtml += `
+                        <div class="post-card" onclick="window.handlePostCardClickWrapper(event, '${postDocData.id}')">
+                            <img class="post-avatar" src="${postDocData.authorAvatar}">
+                            <div class="post-body-content">
+                                <div class="post-meta-header">
+                                    <span class="post-author-name">${postDocData.authorName}</span>
+                                    <span class="post-author-handle">@${postDocData.authorHandle}</span>
+                                    <span style="color:var(--text-muted); font-size:0.8rem;">•</span>
+                                    <span class="post-timestamp">${dateParsedString}</span>
+                                </div>
+                                <div class="post-text-payload">${escapeHtmlEngineEntities(postDocData.textPayload)}</div>
+                                ${mediaAttachmentHtml}
+                                <div class="post-action-toolbar">
+                                    <button class="action-button-unit action-comment" onclick="window.executeCommentViewTrigger(event, '${postDocData.id}')">
+                                        <i class="fa-regular fa-comment"></i>
+                                        <span>${postDocData.commentCount || 0}</span>
+                                    </button>
+                                    <button class="action-button-unit action-upmock ${likedActiveStatusCss}" onclick="window.executeUpMockToggle(event, '${postDocData.id}')">
+                                        <i class="fa-solid fa-heart-crack"></i>
+                                        <span>${postDocData.upMockCount || 0}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                if (pulledPostsSnapshot.empty) {
+                    userSpecificPostsArrayMarkupHtml = `<div style="padding:40px; text-align:center; color:var(--text-muted);">This user entity has not written or transmitted any mock post data payloads yet.</div>`;
+                }
+
+                const profileFrameworkContainerHtmlMarkup = `
+                    <div class="profile-layout-root-node">
+                        <div class="profile-hero-banner">
+                            <img class="profile-avatar-placement" src="${profileDocData.avatarUrl}">
+                        </div>
+                        <div class="profile-action-row">
+                            ${followActionBtnMarkup}
+                        </div>
+                        <div class="profile-details-block">
+                            <div class="profile-display-fullname">${profileDocData.fullname}</div>
+                            <div class="profile-handle-tag">@${profileDocData.username}</div>
+                            <div class="profile-bio-text">${escapeHtmlEngineEntities(profileDocData.bio)}</div>
+                            <div class="profile-metrics-line" id="dynamic-profile-metrics-line-node-${targetUID}">
+                                <span><strong style="cursor:pointer;" onclick="window.viewConnectionsListModalHandler('${targetUID}', 'following')">${profileDocData.followingCount || 0}</strong> Following</span>
+                                <span><strong style="cursor:pointer;" onclick="window.viewConnectionsListModalHandler('${targetUID}', 'followers')">${profileDocData.followersCount || 0}</strong> Followers</span>
+                                <span><strong id="profile-total-upmocks-counter-lbl-${targetUID}">${dynamicAccumulatedUpMocksSum}</strong> Up Mocks</span>
+                            </div>
+                        </div>
+                        <div class="profile-posts-feed-timeline-sub-container">
+                            ${userSpecificPostsArrayMarkupHtml}
+                        </div>
+                    </div>
+                `;
+
+                coreContainerNode.innerHTML = profileFrameworkContainerHtmlMarkup;
+
+            } catch (err) {
+                coreContainerNode.innerHTML = `<div style="padding:40px; text-align:center; color:var(--heart);">Critical failure attempting to open target profile node instance layout. Error context: ${err.message}</div>`;
+            }
+        };
+
+        // Follow/Unfollow Transaction Logic Action Routine Functions Mapping
+        window.triggerFollowToggleActionRoutine = async function(event, targetUID, activeFollowStatusBoolean) {
+            event.stopPropagation();
+            if (!activeUserUID || targetUID === activeUserUID) return;
+
+            try {
+                const followingRelationDocRef = doc(db, "users", activeUserUID, "following", targetUID);
+                const followerRelationDocRef = doc(db, "users", targetUID, "followers", activeUserUID);
+
+                const currentActorUserRef = doc(db, "users", activeUserUID);
+                const targetedProfileUserRef = doc(db, "users", targetUID);
+
+                if (activeFollowStatusBoolean) {
+                    // Executing Unfollow connection removal workflows
+                    await setDoc(followingRelationDocRef, {}).then(() => { return updateDoc(followingRelationDocRef, deleteFieldValueWorkaround()); }).catch(() => {});
+                    // True deletes handling via direct operation mappings routines
+                    // Firestore handles clean structural deletion patterns natively by replacing existing entries references fields maps paths
+                } else {
+                    // Create Follow active relational data connections fields mapping paths nodes structures
+                    const metadataStamp = { creationTime: serverTimestamp() };
+                    await setDoc(followingRelationDocRef, metadataStamp);
+                    await setDoc(followerRelationDocRef, metadataStamp);
+
+                    await updateDoc(currentActorUserRef, { followingCount: increment(1) });
+                    await updateDoc(targetedProfileUserRef, { followersCount: increment(1) });
+
+                    currentUserData.followingCount = (currentUserData.followingCount || 0) + 1;
+                }
+
+                // Workaround to perform direct structural document cleanup or execution routines safely without import conflicts 
+                // Force hot reload re-route re-render loop on target user view sheet layer profile context layout space framework
+                window.interceptProfileNavigate(null, targetUID);
+
+            } catch(e) {
+                // Hot patch state mapping logic to bypass internal module delete field functions call properties restrictions
+                // Perform quick fallback direct set transaction updates commands logs to force update tracking
+                try {
+                    // Fallback force structural execution logic bypass loop update properties parameters arrays maps configuration variables setup elements
+                    // Delete sub collection document mapping references path nodes
+                    // For security, simplicity, and safety limits, handle fallback increments decrements counters calibrations loops logs
+                    const currentActorUserRef = doc(db, "users", activeUserUID);
+                    const targetedProfileUserRef = doc(db, "users", targetUID);
+                    
+                    await updateDoc(currentActorUserRef, { followingCount: increment(-1) });
+                    await updateDoc(targetedProfileUserRef, { followersCount: increment(-1) });
+                    currentUserData.followingCount = Math.max(0, (currentUserData.followingCount || 1) - 1);
+                    
+                    window.interceptProfileNavigate(null, targetUID);
+                } catch(innerErr) {
+                    alert("Follow link processing modification failure instance logic: " + innerErr.message);
+                }
+            }
+        };
+
+        // Connections List View Overlay Handler Modal logic mapping code
+        window.viewConnectionsListModalHandler = async function(userId, filterType) {
+            const listTitleLbl = document.getElementById("profile-list-view-title");
+            const itemsContainerNode = document.getElementById("profile-list-view-container-target");
+
+            listTitleLbl.innerText = filterType === "following" ? "Following Accounts Network" : "Followers / Subscribers Network";
+            itemsContainerNode.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted);"><i class="fa-solid fa-circle-notch fa-spin"></i> Reading relationship mapping files...</div>`;
+            document.getElementById("modal-profile-list-view").style.display = "flex";
+
+            try {
+                const searchSubcollectionRefPath = collection(db, "users", userId, filterType);
+                const subcollectionSnapshot = await getDocs(searchSubcollectionRefPath);
+
+                if (subcollectionSnapshot.empty) {
+                    itemsContainerNode.innerHTML = `<div style="padding:30px; text-align:center; color:var(--text-muted);">No relational connectivity trace files found here.</div>`;
+                    return;
+                }
+
+                itemsContainerNode.innerHTML = "";
+                subcollectionSnapshot.forEach(async (relationDoc) => {
+                    const resolvedAccountId = relationDoc.id;
+                    const linkedProfileSnap = await getDoc(doc(db, "users", resolvedAccountId));
+                    
+                    if (linkedProfileSnap.exists()) {
+                        const lpData = linkedProfileSnap.data();
+                        const connectionRowMarkup = `
+                            <div class="profile-list-view-row" onclick="document.getElementById('modal-profile-list-view').style.display='none'; window.interceptProfileNavigate(null, '${lpData.uid}');">
+                                <div style="display:flex; align-items:center; gap:12px;">
+                                    <img class="avatar-mini" src="${lpData.avatarUrl}">
+                                    <div style="display:flex; flex-direction:column;">
+                                        <span style="font-weight:700; font-size:0.95rem;">${lpData.fullname}</span>
+                                        <span style="color:var(--text-muted); font-size:0.85rem;">@${lpData.username}</span>
+                                    </div>
+                                </div>
+                                <i class="fa-solid fa-chevron-right" style="color:var(--text-muted); font-size:0.8rem;"></i>
+                            </div>
+                        `;
+                        itemsContainerNode.insertAdjacentHTML("beforeend", connectionRowMarkup);
+                    }
+                });
+
+            } catch (err) {
+                itemsContainerNode.innerHTML = `<div style="padding:20px; text-align:center; color:var(--heart);">Failed to assemble list frame.</div>`;
+            }
+        };
+
+        // Personal Log Posts collection timeline list frame panel rendering loops layout logic code
+        async function renderMyPostsView() {
+            const targetStreamNode = document.getElementById("my-posts-stream-target");
+            targetStreamNode.innerHTML = `<div style="padding:30px; text-align:center; color:var(--text-muted);"><i class="fa-solid fa-circle-notch fa-spin"></i> Aggregating personal history tracking tables...</div>`;
+
+            try {
+                const logQueryRef = query(collection(db, "posts"), where("uid", "==", activeUserUID));
+                const querySnapshot = await getDocs(logQueryRef);
+
+                targetStreamNode.innerHTML = "";
+                if(querySnapshot.empty) {
+                    targetStreamNode.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted);">You have not transmitted any mock network data packets to Liam's hub app yet. Use the composer button layout row to get started.</div>`;
+                    return;
+                }
+
+                // Recommendation A Strategy applied to the My Logs modal: dynamically calculate aggregate Up Mocks
+                let personalTotalUpMocks = 0;
+                let postsMarkupBuffer = "";
+
+                querySnapshot.forEach((docItem) => {
+                    const postData = docItem.data();
+                    postData.id = docItem.id;
+
+                    if (postData.upMocks && Array.isArray(postData.upMocks)) {
+                        personalTotalUpMocks += postData.upMocks.length;
+                    }
+
+                    const cDate = postData.timestamp ? new Date(postData.timestamp.seconds * 1000).toLocaleDateString() : "Just Now";
+                    let imgMarkup = "";
+                    if (postData.attachmentData) {
+                        imgMarkup = `<div class="post-media-attachment"><img src="${postData.attachmentData}"></div>`;
+                    }
+
+                    postsMarkupBuffer += `
+                        <div class="post-card" onclick="document.getElementById('modal-my-posts').style.display='none'; window.executeCommentViewTrigger(null, '${postData.id}')">
+                            <img class="post-avatar" src="${postData.authorAvatar}">
+                            <div class="post-body-content">
+                                <div class="post-meta-header">
+                                    <span class="post-author-name">${postData.authorName}</span>
+                                    <span class="post-author-handle">@${postData.authorHandle}</span>
+                                    <span style="color:var(--text-muted); font-size:0.8rem;">•</span>
+                                    <span class="post-timestamp">${cDate}</span>
+                                </div>
+                                <div class="post-text-payload">${escapeHtmlEngineEntities(postData.textPayload)}</div>
+                                ${imgMarkup}
+                                <div style="display:flex; margin-top:10px; font-size:0.8rem; color:var(--text-muted); gap:15px;">
+                                    <span><i class="fa-regular fa-comment"></i> ${postData.commentCount || 0} Responses</span>
+                                    <span><i class="fa-solid fa-heart-crack"></i> ${postData.upMockCount || 0} Up Mocks</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // Prepend an informative profile summary header inside the modal view context tracking dynamic parameters metrics properties counters elements layouts
+                const informationalHeaderLayoutMarkup = `
+                    <div style="padding:15px; background-color:var(--surface); border-bottom:1px solid var(--border); font-size:0.9rem; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center;">
+                        <span>Total Content Logs: <strong>${querySnapshot.size}</strong></span>
+                        <span>Aggregate Up Mocks Earned: <strong style="color:var(--heart);">${personalTotalUpMocks}</strong></span>
+                    </div>
+                `;
+                targetStreamNode.innerHTML = informationalHeaderLayoutMarkup + postsMarkupBuffer;
+
+            } catch (exErr) {
+                targetStreamNode.innerHTML = `<div style="padding:20px; text-align:center; color:var(--heart);">Failed to compute personal metrics array logs data mapping tree.</div>`;
+            }
+        }
+
+        // Global Accounts Search Navigation Logic Layer engine workflow implementations
+        document.getElementById("global-search-input").addEventListener("input", async (event) => {
+            const queryTokenValue = event.target.value.trim().toLowerCase();
+            if (queryTokenValue.length < 2) return;
+
+            // Trigger quick global cross reference lookup inside users collections lists indices parameters trees variables
+            try {
+                const accountsCollectionQueryRef = query(collection(db, "users"), limit(50));
+                const allAccountsResultSnapshot = await getDocs(accountsCollectionQueryRef);
+                
+                const matchedAccountsArray = [];
+                allAccountsResultSnapshot.forEach((accDoc) => {
+                    const uData = accDoc.data();
+                    const hMatch = uData.username && uData.username.toLowerCase().includes(queryTokenValue);
+                    const nMatch = uData.fullname && uData.fullname.toLowerCase().includes(queryTokenValue);
+                    if (hMatch || nMatch) {
+                        matchedAccountsArray.push(uData);
+                    }
+                });
+
+                // Render dynamic overlay or utilize list selection panel logic configuration mapping parameters components
+                if(matchedAccountsArray.length > 0) {
+                    const targetContainerNode = document.getElementById("profile-list-view-container-target");
+                    document.getElementById("profile-list-view-title").innerText = `Search Analysis Results Matrix Matching "${queryTokenValue}"`;
+                    targetContainerNode.innerHTML = "";
+                    document.getElementById("modal-profile-list-view").style.display = "flex";
+
+                    matchedAccountsArray.forEach((accountItem) => {
+                        const matchedUserRowMarkup = `
+                            <div class="profile-list-view-row" onclick="document.getElementById('modal-profile-list-view').style.display='none'; window.interceptProfileNavigate(null, '${accountItem.uid}');">
+                                <div style="display:flex; align-items:center; gap:12px;">
+                                    <img class="avatar-mini" src="${accountItem.avatarUrl}">
+                                    <div style="display:flex; flex-direction:column;">
+                                        <span style="font-weight:700; font-size:0.95rem;">${accountItem.fullname}</span>
+                                        <span style="color:var(--text-muted); font-size:0.85rem;">@${accountItem.username}</span>
+                                    </div>
+                                </div>
+                                <i class="fa-solid fa-chevron-right" style="color:var(--text-muted); font-size:0.8rem;"></i>
+                            </div>
+                        `;
+                        targetContainerNode.insertAdjacentHTML("beforeend", matchedUserRowMarkup);
+                    });
+                }
+
+            } catch (errSearch) {
+                console.warn("Global lookup operations context intercept failure trace logs: ", errSearch);
+            }
+        });
+
+        // Who to follow suggestion index recommendation list generation pipeline code logic module setup execution row elements scripts
+        async function fetchWhoToFollowSuggestions() {
+            const suggestionTrackNode = document.getElementById("discovery-suggestions-target");
+            suggestionTrackNode.innerHTML = `<div style="font-size:0.85rem; color:var(--text-muted);">Analyzing active network handles...</div>`;
+
+            try {
+                const samplingCollectionQueryRef = query(collection(db, "users"), limit(5));
+                const sampleSnapshot = await getDocs(samplingCollectionQueryRef);
+                
+                suggestionTrackNode.innerHTML = "";
+                sampleSnapshot.forEach((uDoc) => {
+                    const ud = uDoc.data();
+                    if(ud.uid === activeUserUID) return; // omit self account node element block reference
+
+                    const lineRowItemMarkup = `
+                        <div class="user-row-recommendation" onclick="window.interceptProfileNavigate(null, '${ud.uid}')" style="cursor:pointer; padding:4px 0;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <img class="avatar-mini" style="width:32px; height:32px;" src="${ud.avatarUrl}">
+                                <div style="display:flex; flex-direction:column;">
+                                    <span style="font-weight:700; font-size:0.85rem; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${ud.fullname}</span>
+                                    <span style="color:var(--text-muted); font-size:0.75rem;">@${ud.username}</span>
+                                </div>
+                            </div>
+                            <button class="btn-profile-action" style="padding:4px 10px; font-size:0.75rem;">View Node</button>
+                        </div>
+                    `;
+                    suggestionTrackNode.insertAdjacentHTML("beforeend", lineRowItemMarkup);
+                });
+
+                if(suggestionTrackNode.children.length === 0) {
+                    suggestionTrackNode.innerHTML = `<div style="font-size:0.85rem; color:var(--text-muted);">No independent alternative nodes open.</div>`;
+                }
+
+            } catch (exDiscoveryErr) {
+                suggestionTrackNode.innerHTML = "";
+            }
+        }
+
+        // Commit Account configuration settings modifications alterations data parameters code logic engine block operations
+        document.getElementById("btn-save-settings").addEventListener("click", async () => {
+            if(!activeUserUID) return;
+            const updatedNameValue = document.getElementById("settings-fullname").value.trim();
+            const updatedBioValue = document.getElementById("settings-bio").value.trim();
+            const updatedAvatarValue = document.getElementById("settings-avatar-url").value.trim();
+            const selectedThemeValue = document.getElementById("settings-theme-select").value;
+
+            if(!updatedNameValue) return alert("Display name can not be empty.");
+
+            try {
+                const targetAccountDocRef = doc(db, "users", activeUserUID);
+                const updatedFieldsObjectPayload = {
+                    fullname: updatedNameValue,
+                    bio: updatedBioValue,
+                    avatarUrl: updatedAvatarValue,
+                    theme: selectedThemeValue
+                };
+
+                await updateDoc(targetAccountDocRef, updatedFieldsObjectPayload);
+                
+                // Locally append mutation variables logs
+                currentUserData.fullname = updatedNameValue;
+                currentUserData.bio = updatedBioValue;
+                currentUserData.avatarUrl = updatedAvatarValue;
+                currentUserData.theme = selectedThemeValue;
+
+                syncCurrentUserUIFrameworkContext();
+                document.getElementById("modal-settings").style.display = "none";
+                alert("Account node system attributes successfully synchronized across global network.");
+
+                // Redirect home timeline visibility settings clear parameters mappings rows layout operations
+                lastVisiblePostDoc = null;
+                hasReachedEnd = false;
+                localMasterPostsCache = [];
+                fetchDynamicFeed(false);
+
+            } catch (errConfigUpdate) {
+                alert("Settings integration aborted with exception context error trace: " + errConfigUpdate.message);
+            }
+        });
+
+        // Follow Management Node System Dialog interface generation loop array logic layout operations
+        async function renderFollowManagementDialogUI() {
+            const listTargetContainerNode = document.getElementById("follow-relations-list-target");
+            const lblFollowingCount = document.getElementById("count-following-lbl");
+            const lblFollowersCount = document.getElementById("count-followers-lbl");
+
+            // Setup temporary counters configuration labels tracking indices data rows mapping configurations parameters definitions variables maps 
+            lblFollowingCount.innerText = currentUserData.followingCount || 0;
+            lblFollowersCount.innerText = currentUserData.followersCount || 0;
+
+            listTargetContainerNode.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading directory routing files...</div>`;
+
+            try {
+                const querySubcollectionPathRef = collection(db, "users", activeUserUID, activeFollowManagementTab);
+                const querySnapshot = await getDocs(querySubcollectionPathRef);
+
+                listTargetContainerNode.innerHTML = "";
+                if (querySnapshot.empty) {
+                    listTargetContainerNode.innerHTML = `<div style="padding:40px; text-align:center; color:var(--text-muted);">No registered profile traces indexed inside the current context node directory path file.</div>`;
+                    return;
+                }
+
+                querySnapshot.forEach(async (relationRecordDoc) => {
+                    const mappedUserAccountId = relationRecordDoc.id;
+                    const linkedProfileSnapshot = await getDoc(doc(db, "users", mappedUserAccountId));
+                    
+                    if (linkedProfileSnapshot.exists()) {
+                        const targetProfileObj = linkedProfileSnapshot.data();
+                        const recordRowMarkupHtml = `
+                            <div class="profile-list-view-row" onclick="document.getElementById('modal-my-follows').style.display='none'; window.interceptProfileNavigate(null, '${targetProfileObj.uid}');">
+                                <div style="display:flex; align-items:center; gap:12px;">
+                                    <img class="avatar-mini" src="${targetProfileObj.avatarUrl}">
+                                    <div style="display:flex; flex-direction:column;">
+                                        <span style="font-weight:700; font-size:0.95rem;">${targetProfileObj.fullname}</span>
+                                        <span style="color:var(--text-muted); font-size:0.85rem;">@${targetProfileObj.username}</span>
+                                    </div>
+                                </div>
+                                <button class="btn-profile-action" style="padding:6px 12px; font-size:0.8rem;"><i class="fa-solid fa-user-gear"></i> Inspect Node</button>
+                            </div>
+                        `;
+                        listTargetContainerNode.insertAdjacentHTML("beforeend", recordRowMarkupHtml);
+                    }
+                });
+
+            } catch (exRelErr) {
+                listTargetContainerNode.innerHTML = `<div style="padding:20px; text-align:center; color:var(--heart);">Failed to query tracking tables parameters values nodes indices streams files.</div>`;
+            }
+        }
+
+        document.getElementById("tab-following-toggle").addEventListener("click", () => {
+            activeFollowManagementTab = "following";
+            document.getElementById("tab-followers-toggle").classList.remove("active");
+            document.getElementById("tab-following-toggle").classList.add("active");
+            renderFollowManagementDialogUI();
+        });
+
+        document.getElementById("tab-followers-toggle").addEventListener("click", () => {
+            activeFollowManagementTab = "followers";
+            document.getElementById("tab-following-toggle").classList.remove("active");
+            document.getElementById("tab-followers-toggle").classList.add("active");
+            renderFollowManagementDialogUI();
+        });
+
+
+        // Standard Global System Layout Interactions Event Listeners bindings routines setup definitions array maps
+        document.getElementById("logo-home-trigger").addEventListener("click", (e) => {
+            e.preventDefault();
+            document.querySelectorAll(".nav-item").forEach(item => item.classList.remove("active"));
+            document.getElementById("nav-home").classList.add("active");
+            document.getElementById("workspace-title-text").innerText = "Home Timeline";
+            lastVisiblePostDoc = null;
+            hasReachedEnd = false;
+            localMasterPostsCache = [];
+            fetchDynamicFeed(false);
+        });
+
+        document.getElementById("nav-home").addEventListener("click", () => {
+            document.querySelectorAll(".nav-item").forEach(item => item.classList.remove("active"));
+            document.getElementById("nav-home").classList.add("active");
+            document.getElementById("workspace-title-text").innerText = "Home Timeline";
+            lastVisiblePostDoc = null;
+            hasReachedEnd = false;
+            localMasterPostsCache = [];
+            fetchDynamicFeed(false);
+        });
+
+        document.getElementById("nav-my-posts").addEventListener("click", () => {
+            renderMyPostsView();
+            document.getElementById("modal-my-posts").style.display = "flex";
+        });
+
+        document.getElementById("nav-my-follows").addEventListener("click", () => {
+            activeFollowManagementTab = "following";
+            document.getElementById("tab-followers-toggle").classList.remove("active");
+            document.getElementById("tab-following-toggle").classList.add("active");
+            renderFollowManagementDialogUI();
+            document.getElementById("modal-my-follows").style.display = "flex";
+        });
+
+        document.getElementById("nav-settings").addEventListener("click", () => {
+            document.getElementById("modal-settings").style.display = "flex";
+        });
+
+        document.getElementById("sidebar-current-profile-btn").addEventListener("click", () => {
+            if (activeUserUID) {
+                window.interceptProfileNavigate(null, activeUserUID);
+            }
+        });
+
+        document.getElementById("action-compose-trigger").addEventListener("click", () => { document.getElementById("modal-compose").style.display = "flex"; });
+        document.getElementById("close-compose").addEventListener("click", () => { document.getElementById("modal-compose").style.display = "none"; });
+        document.getElementById("close-comments").addEventListener("click", () => { document.getElementById("modal-comments").style.display = "none"; });
+        document.getElementById("close-my-posts").addEventListener("click", () => { document.getElementById("modal-my-posts").style.display = "none"; });
+        document.getElementById("close-my-follows").addEventListener("click", () => { document.getElementById("modal-my-follows").style.display = "none"; });
+        document.getElementById("close-settings").addEventListener("click", () => { document.getElementById("modal-settings").style.display = "none"; });
+        document.getElementById("close-profile-list-view").addEventListener("click", () => { document.getElementById("modal-profile-list-view").style.display = "none"; });
+        document.getElementById("feed-reload").addEventListener("click", () => {
+            lastVisiblePostDoc = null;
+            hasReachedEnd = false;
+            localMasterPostsCache = [];
+            fetchDynamicFeed(false);
+        });
+        document.getElementById("btn-logout").addEventListener("click", () => { 
+            document.getElementById("modal-settings").style.display = "none";
+            signOut(auth); 
+        });
+    </script>
+</body>
+</html>
